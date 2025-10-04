@@ -1,20 +1,204 @@
 """
 Chat Application with RAG (Retrieval Augmented Generation)
-Demonstrates document-based question answering with vector search
+Beautiful CSS Styling + Full Features
 """
-
 
 import streamlit as st
 import sys
 import os
 from pathlib import Path
 import tempfile
+from PIL import Image
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
  
 from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents, load_sample_documents_for_demo
+
+
+def apply_custom_css():
+    """Apply beautiful custom CSS styling"""
+    st.markdown("""
+        <style>
+        /* Main App Background */
+        .stApp {
+            background: linear-gradient(135deg, #1e3c72 0%, #800080  100%);
+        }
+        
+        /* Title Styling */
+        h1 {
+            color: white !important;
+            text-align: center;
+            font-size: 3rem !important;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            margin-bottom: 0.5rem !important;
+        }
+        
+        /* Subtitle */
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Chat Messages */
+        .stChatMessage {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            margin: 10px 0 !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+        }
+        
+        /* User Message */
+        [data-testid="stChatMessageContent"] {
+            background: transparent !important;
+        }
+        
+        /* Buttons */
+        .stButton>button {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Sidebar */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] .stMarkdown {
+            color: white !important;
+        }
+        
+        [data-testid="stSidebar"] label {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        /* Input Fields */
+        .stTextInput>div>div>input,
+        .stTextArea>div>div>textarea {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 5px;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            background: transparent;
+            color: white;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Success/Info/Warning Messages */
+        .stSuccess, .stInfo, .stWarning {
+            background: rgba(255,255,255,0.95) !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+        }
+        
+        /* Expander */
+        .streamlit-expanderHeader {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: white !important;
+        }
+        
+        /* Card Style */
+        .info-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .info-card h2 {
+            color: white !important;
+            margin-top: 0;
+        }
+        
+        /* Chat Input */
+        .stChatInput {
+            border-radius: 25px;
+        }
+        
+        /* Hide Streamlit Branding */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        /* Headers in main area */
+        h2, h3 {
+            color: white !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+def create_header():
+    """Create beautiful header"""
+
+    # Show title and subtitle
+    st.markdown("""
+        <div style="text-align: center; padding: 20px 0;">
+            <img src="static/Nitra2.png" width="120">
+            <h1> RAG Chat Assistant</h1>
+            <p class="subtitle">
+                ✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 def init_session_state():
     """Initialize session state variables"""
@@ -43,13 +227,12 @@ def display_documents():
         docs = st.session_state.rag_system.list_documents()
 
         if docs and not any("error" in doc for doc in docs):
-            st.subheader("📄 Documents in Knowledge Base")
+            st.markdown("### 📄 Documents in Knowledge Base")
             for doc in docs:
                 with st.expander(f"📄 {doc.get('doc_id', 'Unknown')} ({doc.get('chunks', 0)} chunks)"):
                     st.json(doc.get('metadata', {}))
                     if st.button(f"Delete {doc['doc_id']}", key=f"delete_{doc['doc_id']}"):
-                        result = st.session_state.rag_system.delete_document(
-                            doc['doc_id'])
+                        result = st.session_state.rag_system.delete_document(doc['doc_id'])
                         st.success(result)
                         st.rerun()
         else:
@@ -58,26 +241,29 @@ def display_documents():
 
 def main():
     st.set_page_config(
-        page_title="Nitra",
-        page_icon="🌙",
-        layout="wide"
+        page_title="RAG Chat Assistant",
+        page_icon="",
+        layout="wide",
+        initial_sidebar_state="expanded"
     )
 
-    st.title("🌙Nitra")
-    st.markdown(
-        "Which sleep challenges should Nitra help users with?")
+    # Apply custom CSS
+    apply_custom_css()
+
+    # Create header
+    create_header()
 
     # Initialize session state
     init_session_state()
 
     # Sidebar configuration
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.markdown("### ⚙️ Configuration")
 
         # Model selection
         available_models = get_available_models()
         selected_model = st.selectbox(
-            "Select Model",
+            "🤖 Select Model",
             available_models,
             index=0,
             help="Choose the language model to use"
@@ -85,7 +271,7 @@ def main():
 
         # Temperature slider
         temperature = st.slider(
-            "Temperature",
+            "🌡️ Temperature",
             min_value=0.0,
             max_value=2.0,
             value=0.7,
@@ -95,7 +281,7 @@ def main():
 
         # Max tokens
         max_tokens = st.slider(
-            "Max Tokens",
+            "📏 Max Tokens",
             min_value=50,
             max_value=4000,
             value=2000,
@@ -104,7 +290,7 @@ def main():
         )
 
         # RAG settings
-        st.subheader("📚 RAG Settings")
+        st.markdown("### 📚 RAG Settings")
         context_max_tokens = st.slider(
             "Context Max Tokens",
             min_value=500,
@@ -121,6 +307,8 @@ def main():
             value=5,
             help="Number of document chunks to retrieve"
         )
+
+        st.divider()
 
         # Initialize systems
         col1, col2 = st.columns(2)
@@ -147,7 +335,7 @@ def main():
         st.divider()
 
         # Document management
-        st.subheader("📁 Document Management")
+        st.markdown("### 📁 Document Management")
 
         # File upload
         uploaded_files = st.file_uploader(
@@ -178,15 +366,13 @@ def main():
                                 st.session_state.rag_system.add_text_document(
                                     content,
                                     uploaded_file.name.split('.')[0],
-                                    {"source": uploaded_file.name,
-                                        "type": "uploaded"}
+                                    {"source": uploaded_file.name, "type": "uploaded"}
                                 )
                                 result = f"Successfully added text file: {uploaded_file.name}"
 
                             st.success(result)
                         except Exception as e:
-                            st.error(
-                                f"Error processing {uploaded_file.name}: {str(e)}")
+                            st.error(f"Error processing {uploaded_file.name}: {str(e)}")
                         finally:
                             # Clean up temp file
                             os.unlink(tmp_path)
@@ -194,7 +380,7 @@ def main():
                         st.rerun()
 
         # Add text document
-        with st.expander("✍️ Add Text Document"):
+        with st.expander("✏️ Add Text Document"):
             doc_title = st.text_input("Document Title")
             doc_content = st.text_area("Document Content", height=200)
 
@@ -215,20 +401,23 @@ def main():
 
         st.divider()
 
-        # Clear chat button
-        if st.button("🗑️ Clear Chat", type="secondary"):
+        # Quick actions
+        if st.button("🗑️ Clear Chat"):
             st.session_state.messages = []
             st.rerun()
 
         st.divider()
+
+        # Stats
+        if st.session_state.rag_system:
+            stats = st.session_state.rag_system.get_stats()
+            st.markdown("### 📊 Statistics")
+            st.metric("Documents", stats.get("total_documents", 0))
+            st.metric("Chunks", stats.get("total_chunks", 0))
+
+        st.divider()
         st.markdown("### 📚 About")
         st.markdown("""
-        This RAG-enabled chat app demonstrates:
-        - Document ingestion and vectorization
-        - Semantic search and retrieval
-        - Context-aware responses
-        - Knowledge base management
-        
         **Features:**
         - Upload PDF and text files
         - Semantic search across documents
@@ -236,11 +425,10 @@ def main():
         - Document management
         
         **For Students:**
-        - Experiment with different embedding models
-        - Implement advanced chunking strategies
-        - Add metadata filtering
-        - Create document summarization
-        - Build citation systems
+        - Experiment with embeddings
+        - Advanced chunking strategies
+        - Metadata filtering
+        - Citation systems
         """)
 
     # Main interface - Two tabs
@@ -249,8 +437,23 @@ def main():
     with tab1:
         # Main chat interface
         if not st.session_state.llm_client or not st.session_state.rag_system:
-            st.warning(
-                "⚠️ Please initialize both Model and RAG system in the sidebar first!")
+            st.markdown("""
+                <div class="info-card">
+                    <h2>🚀 Welcome to RAG Chat</h2>
+                    <p>
+                        Upload your documents and start asking questions! 
+                        Our AI assistant will search through your knowledge base 
+                        and provide accurate, context-aware answers.
+                    </p>
+                    <ul style="margin-top: 15px;">
+                        <li>📄 Upload PDF and text files</li>
+                        <li>🔍 Intelligent semantic search</li>
+                        <li>💡 Context-aware AI responses</li>
+                        <li>📚 Manage your knowledge base</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+            st.warning("⚠️ Please initialize both Model and RAG system in the sidebar first!")
             return
 
         # Display existing chat messages
@@ -269,11 +472,11 @@ def main():
                 st.session_state.example_query = "How do large language models work and what are their capabilities?"
 
         with col3:
-            if st.button("🌐 Tell me about Streamlit"):
+            if st.button("🌟 Tell me about Streamlit"):
                 st.session_state.example_query = "What is Streamlit and how do I use it for building apps?"
 
         # Chat input
-        prompt = st.chat_input("Ask me anything about the documents...")
+        prompt = st.chat_input("💬 Ask me anything about the documents...")
 
         # Handle example query
         if hasattr(st.session_state, 'example_query'):
@@ -282,8 +485,7 @@ def main():
 
         if prompt:
             # Add user message to chat history
-            st.session_state.messages.append(
-                {"role": "user", "content": prompt})
+            st.session_state.messages.append({"role": "user", "content": prompt})
 
             # Display user message
             with st.chat_message("user"):
@@ -291,10 +493,10 @@ def main():
 
             # Generate and display assistant response
             with st.chat_message("assistant"):
-                with st.spinner("Searching documents and generating response..."):
+                with st.spinner("🔍 Searching documents and generating response..."):
                     # Get relevant context from RAG system
                     context = st.session_state.rag_system.get_context_for_query(
-                        prompt, max_context_length=2000)
+                        prompt, max_context_length=context_max_tokens)
 
                     # Create enhanced prompt with context
                     enhanced_prompt = f"""
@@ -311,12 +513,10 @@ def main():
                     messages = []
                     # Add conversation history (excluding current question)
                     for msg in st.session_state.messages[:-1]:
-                        messages.append(
-                            {"role": msg["role"], "content": msg["content"]})
+                        messages.append({"role": msg["role"], "content": msg["content"]})
 
                     # Add the enhanced prompt
-                    messages.append(
-                        {"role": "user", "content": enhanced_prompt})
+                    messages.append({"role": "user", "content": enhanced_prompt})
 
                     # Get response from LLM
                     response = st.session_state.llm_client.chat(messages)

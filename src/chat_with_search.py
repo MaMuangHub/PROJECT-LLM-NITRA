@@ -17,6 +17,7 @@ from utils.llm_client import LLMClient, get_available_models
 from utils.search_tools import WebSearchTool, format_search_results
 from utils.conversion_tools import Conversion, format_search_results
 
+
 def init_session_state():
     """Initialize session state variables"""
     if "messages" not in st.session_state:
@@ -160,12 +161,12 @@ def display_chat_messages():
 
 def main():
     st.set_page_config(
-        page_title="Chat with Web Search",
+        page_title="SLEEPY",
         page_icon="🔍",
         layout="wide"
     )
 
-    st.title("🔍 Chat with Web Search")
+    st.title("🔍 SLEEPY: Smart LLM ")
     st.markdown(
         "AI chat with **automatic** web search capabilities - Advanced starter code!")
 

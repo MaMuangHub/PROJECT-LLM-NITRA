@@ -14,6 +14,7 @@ class Conversion:
 
     def __init__(self):
         self.ex_api_key = os.getenv("EX_API_KEY")
+        self.serper_api_key = os.getenv("SERPER_API_KEY")
 
     def search_serper(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
         """
