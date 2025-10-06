@@ -1,16 +1,20 @@
 """
-Enhanced RAG Chat with Beautiful CSS Styling
+Chat Application with RAG (Retrieval Augmented Generation)
+Beautiful CSS Styling + Full Features
 """
 
 import streamlit as st
 import sys
+import os
 from pathlib import Path
+import tempfile
+from PIL import Image
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-
-from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents_for_demo
+ 
+from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents, load_sample_documents_for_demo
 
 
 def apply_custom_css():
@@ -19,7 +23,7 @@ def apply_custom_css():
         <style>
         /* Main App Background */
         .stApp {
-            background: linear-gradient(135deg, #1e3c72 0%, #800080 100%);
+            background: linear-gradient(135deg, #36454F 0%, #800080  100%);
         }
         
         /* Title Styling */
@@ -41,7 +45,7 @@ def apply_custom_css():
         
         /* Chat Messages */
         .stChatMessage {
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
             border-radius: 15px !important;
             padding: 20px !important;
             margin: 10px 0 !important;
@@ -77,7 +81,8 @@ def apply_custom_css():
         
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3 {
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] .stMarkdown {
             color: white !important;
         }
         
@@ -171,41 +176,62 @@ def apply_custom_css():
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255,255,255,0.5);
         }
+        
+        /* Headers in main area */
+        h2, h3 {
+            color: white !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
 
 def create_header():
     """Create beautiful header"""
-    st.markdown("""
-        <div style="text-align: center; padding: 20px 0;">
-            <h1>🤖 RAG Chat Assistant</h1>
-            <p class="subtitle">
-                ✨ AI-Powered Document Intelligence • Ask Anything About Your Knowledge Base
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-
-
-def create_welcome_card():
-    """Create welcome card"""
-    st.markdown("""
-        <div class="info-card">
-            <h2>🚀 Welcome to RAG Chat</h2>
-            <p>
-                Upload your documents and start asking questions! 
-                Our AI assistant will search through your knowledge base 
-                and provide accurate, context-aware answers.
-            </p>
-            <ul style="margin-top: 15px;">
-                <li>📄 Upload PDF and text files</li>
-                <li>🔍 Intelligent semantic search</li>
-                <li>💡 Context-aware AI responses</li>
-                <li>📚 Manage your knowledge base</li>
-            </ul>
-        </div>
-    """, unsafe_allow_html=True)
-
+    import base64
+    
+    # อ่านรูปจาก static folder
+    try:
+        with open("static/CN.png", "rb") as f:
+            img = base64.b64encode(f.read()).decode()
+        img_url = f"data:image/png;base64,{img}"
+    except:
+        img_url = ""  # ถ้าไม่มีรูปใช้ emoji
+    
+    if img_url:
+        st.markdown(f"""
+            <style> 
+            .logo-circle {{
+                width: 120px;
+                height: 120px;
+                margin: 0 auto 30px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 50%;
+                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+                animation: float 3s ease-in-out infinite;
+                background-image: url('{img_url}');
+                background-size: 99%;
+                background-position: center;
+                background-repeat: no-repeat;
+            }}
+            @keyframes float {{
+                0%, 100% {{ transform: translateY(0px); }}
+                50% {{ transform: translateY(-10px); }}
+            }}
+            </style>
+            <div style="text-align: center; padding: 20px 0;">
+                <div class="logo-circle"></div>
+                <h1>🤖 RAG Chat Assistant</h1>
+                <p class="subtitle">✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code</p>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+            <div style="text-align: center; padding: 20px 0;">
+                <h1>🤖 RAG Chat Assistant</h1>
+                <p class="subtitle">✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code</p>
+            </div>
+        """, unsafe_allow_html=True)
+    
 
 def init_session_state():
     """Initialize session state variables"""
@@ -228,10 +254,28 @@ def display_chat_messages():
             st.markdown(message["content"])
 
 
+def display_documents():
+    """Display documents in the RAG system"""
+    if st.session_state.rag_system:
+        docs = st.session_state.rag_system.list_documents()
+
+        if docs and not any("error" in doc for doc in docs):
+            st.markdown("### 📄 Documents in Knowledge Base")
+            for doc in docs:
+                with st.expander(f"📄 {doc.get('doc_id', 'Unknown')} ({doc.get('chunks', 0)} chunks)"):
+                    st.json(doc.get('metadata', {}))
+                    if st.button(f"Delete {doc['doc_id']}", key=f"delete_{doc['doc_id']}"):
+                        result = st.session_state.rag_system.delete_document(doc['doc_id'])
+                        st.success(result)
+                        st.rerun()
+        else:
+            st.info("No documents in knowledge base yet.")
+
+
 def main():
     st.set_page_config(
         page_title="RAG Chat Assistant",
-        page_icon="🤖",
+        page_icon="",
         layout="wide",
         initial_sidebar_state="expanded"
     )
@@ -245,7 +289,7 @@ def main():
     # Initialize session state
     init_session_state()
 
-    # Sidebar
+    # Sidebar configuration
     with st.sidebar:
         st.markdown("### ⚙️ Configuration")
 
@@ -254,44 +298,143 @@ def main():
         selected_model = st.selectbox(
             "🤖 Select Model",
             available_models,
-            index=0
+            index=0,
+            help="Choose the language model to use"
         )
 
-        temperature = st.slider("🌡️ Temperature", 0.0, 2.0, 0.7, 0.1)
-        max_tokens = st.slider("📏 Max Tokens", 50, 4000, 2000, 50)
+        # Temperature slider
+        temperature = st.slider(
+            "🌡️ Temperature",
+            min_value=0.0,
+            max_value=2.0,
+            value=0.7,
+            step=0.1,
+            help="Controls randomness in responses"
+        )
+
+        # Max tokens
+        max_tokens = st.slider(
+            "📏 Max Tokens",
+            min_value=50,
+            max_value=4000,
+            value=2000,
+            step=50,
+            help="Maximum length of response"
+        )
+
+        # RAG settings
+        st.markdown("### 📚 RAG Settings")
+        context_max_tokens = st.slider(
+            "Context Max Tokens",
+            min_value=500,
+            max_value=3000,
+            value=1500,
+            step=100,
+            help="Maximum tokens for context"
+        )
+
+        n_results = st.slider(
+            "Search Results",
+            min_value=1,
+            max_value=10,
+            value=5,
+            help="Number of document chunks to retrieve"
+        )
 
         st.divider()
 
-        # Initialize buttons
+        # Initialize systems
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            if st.button("🤖 Init Model"):
-                with st.spinner("Loading..."):
+            if st.button("🤖 Init Model") or st.session_state.llm_client is None:
+                with st.spinner("Initializing model..."):
                     st.session_state.llm_client = LLMClient(
                         model=selected_model,
                         temperature=temperature,
                         max_tokens=max_tokens
                     )
-                st.success("✅ Ready!")
+                st.success("Model ready!")
 
         with col2:
-            if st.button("📚 Init RAG"):
-                with st.spinner("Loading..."):
+            if st.button("📚 Init RAG") or st.session_state.rag_system is None:
+                with st.spinner("Initializing RAG system..."):
                     st.session_state.rag_system = SimpleRAGSystem()
                     if not st.session_state.rag_initialized:
                         load_sample_documents_for_demo(st.session_state.rag_system)
                         st.session_state.rag_initialized = True
-                st.success("✅ Ready!")
+                st.success("RAG ready!")
+
+        st.divider()
+
+        # Document management
+        st.markdown("### 📁 Document Management")
+
+        # File upload
+        uploaded_files = st.file_uploader(
+            "Upload Documents",
+            type=["txt", "pdf"],
+            accept_multiple_files=True,
+            help="Upload text or PDF files to add to knowledge base"
+        )
+
+        if uploaded_files and st.session_state.rag_system:
+            for uploaded_file in uploaded_files:
+                if st.button(f"Add {uploaded_file.name}", key=f"add_{uploaded_file.name}"):
+                    with st.spinner(f"Processing {uploaded_file.name}..."):
+                        # Save uploaded file temporarily
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{uploaded_file.name}") as tmp_file:
+                            tmp_file.write(uploaded_file.getvalue())
+                            tmp_path = tmp_file.name
+
+                        try:
+                            if uploaded_file.type == "application/pdf":
+                                result = st.session_state.rag_system.add_pdf_document(
+                                    tmp_path,
+                                    uploaded_file.name.split('.')[0]
+                                )
+                            else:
+                                # Text file
+                                content = uploaded_file.getvalue().decode("utf-8")
+                                st.session_state.rag_system.add_text_document(
+                                    content,
+                                    uploaded_file.name.split('.')[0],
+                                    {"source": uploaded_file.name, "type": "uploaded"}
+                                )
+                                result = f"Successfully added text file: {uploaded_file.name}"
+
+                            st.success(result)
+                        except Exception as e:
+                            st.error(f"Error processing {uploaded_file.name}: {str(e)}")
+                        finally:
+                            # Clean up temp file
+                            os.unlink(tmp_path)
+
+                        st.rerun()
+
+        # Add text document
+        with st.expander("✏️ Add Text Document"):
+            doc_title = st.text_input("Document Title")
+            doc_content = st.text_area("Document Content", height=200)
+
+            if st.button("Add Text Document") and doc_title and doc_content and st.session_state.rag_system:
+                st.session_state.rag_system.add_text_document(
+                    doc_content,
+                    doc_title.lower().replace(" ", "_"),
+                    {"title": doc_title, "type": "manual_entry"}
+                )
+                st.success(f"Added document: {doc_title}")
+                st.rerun()
+
+        # Load sample documents
+        if st.button("📖 Load Sample Docs") and st.session_state.rag_system:
+            result = load_sample_documents(st.session_state.rag_system)
+            st.success(result)
+            st.rerun()
 
         st.divider()
 
         # Quick actions
-        st.markdown("### 🎯 Quick Actions")
-        
-        if st.button("📖 Load Sample Docs") and st.session_state.rag_system:
-            st.success("✅ Samples loaded!")
-        
         if st.button("🗑️ Clear Chat"):
             st.session_state.messages = []
             st.rerun()
@@ -305,84 +448,129 @@ def main():
             st.metric("Documents", stats.get("total_documents", 0))
             st.metric("Chunks", stats.get("total_chunks", 0))
 
-    # Main content
-    if not st.session_state.llm_client or not st.session_state.rag_system:
-        create_welcome_card()
-        st.warning("⚠️ Please initialize Model and RAG system in the sidebar")
-        return
-
-    # Display chat
-    display_chat_messages()
-
-    # Example queries
-    st.markdown("### 💡 Try these:")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("🧠 What is AI?"):
-            st.session_state.example_query = "What is artificial intelligence?"
-    
-    with col2:
-        if st.button("🤖 About LLMs"):
-            st.session_state.example_query = "Explain large language models"
-    
-    with col3:
-        if st.button("🌟 About Streamlit"):
-            st.session_state.example_query = "What is Streamlit?"
-
-    # Chat input
-    prompt = st.chat_input("💬 Ask me anything...")
-
-    # Handle example query
-    if hasattr(st.session_state, 'example_query'):
-        prompt = st.session_state.example_query
-        delattr(st.session_state, 'example_query')
-
-    if prompt:
-        # Add user message
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.divider()
+        st.markdown("### 📚 About")
+        st.markdown("""
+        **Features:**
+        - Upload PDF and text files
+        - Semantic search across documents
+        - Contextual AI responses
+        - Document management
         
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        **For Students:**
+        - Experiment with embeddings
+        - Advanced chunking strategies
+        - Metadata filtering
+        - Citation systems
+        """)
 
-        # Generate response
-        with st.chat_message("assistant"):
-            with st.spinner("🔍 Searching and generating..."):
-                # Get context
-                context = st.session_state.rag_system.get_context_for_query(
-                    prompt, max_context_length=2000
-                )
+    # Main interface - Two tabs
+    tab1, tab2 = st.tabs(["💬 Chat", "📄 Documents"])
 
-                # Create prompt
-                enhanced_prompt = f"""
-                Based on the following context:
+    with tab1:
+        # Main chat interface
+        if not st.session_state.llm_client or not st.session_state.rag_system:
+            st.markdown("""
+                <div class="info-card">
+                    <h2>🚀 Welcome to RAG Chat</h2>
+                    <p>
+                        Upload your documents and start asking questions! 
+                        Our AI assistant will search through your knowledge base 
+                        and provide accurate, context-aware answers.
+                    </p>
+                    <ul style="margin-top: 15px;">
+                        <li>📄 Upload PDF and text files</li>
+                        <li>🔍 Intelligent semantic search</li>
+                        <li>💡 Context-aware AI responses</li>
+                        <li>📚 Manage your knowledge base</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+            st.warning("⚠️ Please initialize both Model and RAG system in the sidebar first!")
+            return
 
-                {context}
+        # Display existing chat messages
+        display_chat_messages()
 
-                Question: {prompt}
+        # Example queries
+        st.markdown("### 💡 Try these example queries:")
+        col1, col2, col3 = st.columns(3)
 
-                Provide a comprehensive answer based on the context above.
-                """
+        with col1:
+            if st.button("🧠 What is artificial intelligence?"):
+                st.session_state.example_query = "What is artificial intelligence and how does it work?"
 
-                # Get response
-                messages = [
-                    {"role": msg["role"], "content": msg["content"]}
-                    for msg in st.session_state.messages[:-1]
-                ]
-                messages.append({"role": "user", "content": enhanced_prompt})
+        with col2:
+            if st.button("🤖 Explain large language models"):
+                st.session_state.example_query = "How do large language models work and what are their capabilities?"
 
-                response = st.session_state.llm_client.chat(messages)
-                st.markdown(response)
+        with col3:
+            if st.button("🌟 Tell me about Streamlit"):
+                st.session_state.example_query = "What is Streamlit and how do I use it for building apps?"
 
-                with st.expander("📄 View Context"):
-                    st.markdown(context)
+        # Chat input
+        prompt = st.chat_input("💬 Ask me anything about the documents...")
 
-                # Save response
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": response,
-                    "context_used": True
-                })
+        # Handle example query
+        if hasattr(st.session_state, 'example_query'):
+            prompt = st.session_state.example_query
+            delattr(st.session_state, 'example_query')
+
+        if prompt:
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            # Display user message
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Generate and display assistant response
+            with st.chat_message("assistant"):
+                with st.spinner("🔍 Searching documents and generating response..."):
+                    # Get relevant context from RAG system
+                    context = st.session_state.rag_system.get_context_for_query(
+                        prompt, max_context_length=context_max_tokens)
+
+                    # Create enhanced prompt with context
+                    enhanced_prompt = f"""
+                    Based on the following information from the knowledge base, please answer the user's question:
+
+                    {context}
+
+                    User Question: {prompt}
+
+                    Please provide a comprehensive answer based on the information provided above. If the information is not sufficient or not found in the knowledge base, please mention that clearly.
+                    """
+
+                    # Prepare messages for LLM
+                    messages = []
+                    # Add conversation history (excluding current question)
+                    for msg in st.session_state.messages[:-1]:
+                        messages.append({"role": msg["role"], "content": msg["content"]})
+
+                    # Add the enhanced prompt
+                    messages.append({"role": "user", "content": enhanced_prompt})
+
+                    # Get response from LLM
+                    response = st.session_state.llm_client.chat(messages)
+
+                    # Display response
+                    st.markdown(response)
+
+                    # Show retrieved context in expander
+                    with st.expander("📄 Retrieved Context"):
+                        st.markdown(context)
+
+                    # Add assistant response to chat history
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": response,
+                        "context_used": True
+                    })
+
+    with tab2:
+        # Document management tab
+        display_documents()
 
 
 if __name__ == "__main__":

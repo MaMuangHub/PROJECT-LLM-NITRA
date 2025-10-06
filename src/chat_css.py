@@ -23,7 +23,7 @@ def apply_custom_css():
         <style>
         /* Main App Background */
         .stApp {
-            background: linear-gradient(135deg, #1e3c72 0%, #800080  100%);
+            background: linear-gradient(135deg, #36454F 0%, #800080  100%);
         }
         
         /* Title Styling */
@@ -187,18 +187,47 @@ def apply_custom_css():
 
 def create_header():
     """Create beautiful header"""
-
-    # Show title and subtitle
+    
     st.markdown("""
-        <div style="text-align: center; padding: 20px 0;">
-            <img src="static/Nitra2.png" width="120">
-            <h1> RAG Chat Assistant</h1>
+        <style>
+        .header-container {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .logo-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .logo-circle::before {
+            content: "😴";
+            font-size: 60px;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        </style>
+        
+        <div class="header-container">
+            <div class="logo-circle"></div>
+            <h1>🤖 RAG Chat Assistant</h1>
             <p class="subtitle">
                 ✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code
             </p>
         </div>
     """, unsafe_allow_html=True)
-
+    
 
 def init_session_state():
     """Initialize session state variables"""
