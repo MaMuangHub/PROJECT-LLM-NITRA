@@ -23,7 +23,7 @@ def apply_custom_css():
         <style>
         /* Main App Background */
         .stApp {
-            background: linear-gradient(135deg, #36454F 0%, #800080  100%);
+            background: linear-gradient(180deg, #282828 0%, #800080  100%);
         }
         
         /* Title Styling */
@@ -191,7 +191,7 @@ def create_header():
     
     # อ่านรูปจาก static folder
     try:
-        with open("Picture/CN.png", "rb") as f:
+        with open("Picture/nitra.png", "rb") as f:
             img = base64.b64encode(f.read()).decode()
         img_url = f"data:image/png;base64,{img}"
     except:
@@ -205,7 +205,7 @@ def create_header():
                 height: 120px;
                 margin: 0 auto 30px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 50%;
+                border-radius: 60%;
                 box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
                 animation: float 3s ease-in-out infinite;
                 background-image: url('{img_url}');
@@ -220,15 +220,15 @@ def create_header():
             </style>
             <div style="text-align: center; padding: 20px 0;">
                 <div class="logo-circle"></div>
-                <h1>🤖 RAG Chat Assistant</h1>
-                <p class="subtitle">✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code</p>
+                <h1>NITRA</h1>
+                <p class="subtitle"> 🌙 NITRA — Helping you sleep better, every night.</p>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <div style="text-align: center; padding: 20px 0;">
-                <h1>🤖 RAG Chat Assistant</h1>
-                <p class="subtitle">✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code</p>
+                <h1>NITRA</h1>
+                <p class="subtitle">🌙 NITRA — Helping you sleep better, every night</p>
             </div>
         """, unsafe_allow_html=True)
     
@@ -453,7 +453,7 @@ def main():
         st.markdown("### 📚 About")
         st.markdown("""
         **Features:**
-        - Upload PDF and text files
+        - Upload PDF and text files 
         - Semantic search across documents
         - Contextual AI responses
         - Document management
@@ -494,23 +494,23 @@ def main():
         display_chat_messages()
 
         # Example queries
-        st.markdown("### 💡 Try these example queries:")
+        st.markdown("### ❔ How do you have sleep problems today:")
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            if st.button("🧠 What is artificial intelligence?"):
+            if st.button("🫩 I feel like I can't sleep today"):
                 st.session_state.example_query = "What is artificial intelligence and how does it work?"
 
         with col2:
-            if st.button("🤖 Explain large language models"):
+            if st.button("😴 How many hours should I sleep"):
                 st.session_state.example_query = "How do large language models work and what are their capabilities?"
 
         with col3:
-            if st.button("🌟 Tell me about Streamlit"):
+            if st.button("🛏️ Tell me how to sleep well"):
                 st.session_state.example_query = "What is Streamlit and how do I use it for building apps?"
 
         # Chat input
-        prompt = st.chat_input("💬 Ask me anything about the documents...")
+        prompt = st.chat_input("💬 Ask me anything about the sleep...")
 
         # Handle example query
         if hasattr(st.session_state, 'example_query'):
