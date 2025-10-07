@@ -140,7 +140,8 @@ def main():
                 with st.spinner("Initializing RAG system..."):
                     st.session_state.rag_system = SimpleRAGSystem()
                     if not st.session_state.rag_initialized:
-                        load_sample_documents_for_demo(st.session_state.rag_system)
+                        # load_sample_documents_for_demo(st.session_state.rag_system)
+                        load_sample_documents(st.session_state.rag_system)
                         st.session_state.rag_initialized = True
                 st.success("RAG ready!")
 
@@ -298,13 +299,21 @@ def main():
 
                     # Create enhanced prompt with context
                     enhanced_prompt = f"""
-                    Based on the following information from the knowledge base, please answer the user's question:
+                    You are a highly specialized sleep expert with an exceptional ability to simplify complex topics. Your sole duty is to answer user questions strictly based on the information provided in the knowledge base **[Context]** below.
 
-                    {context}
+                    **Core Instructions:**
+                    1.  **Level of Detail & Simplicity:** Your answers **must be detailed and comprehensive**, treating the user as a **complete novice** with zero prior knowledge of sleep science. Therefore, use **simple, clear language** and fully explain all core concepts.
+                    2.  **Language Match:** **You must answer the user's question in the exact language the user used to ask the question** (e.g., if the question is in English, answer in English; if in Thai, answer in Thai).
+                    3.  **Content Scope:** Your response **must focus exclusively on the topic of sleeping**. This includes all related aspects, sleep quality, causes, health impacts, and specifically **disorders or conditions caused by lack of sleep or poor sleep quality.**
+                    4.  **Context Constraint (Anti-Hallucination):** You must answer the user's question using **only** the data found in the **[Context]** section. **Do not use any external knowledge, make assumptions, or generate (hallucinate) any details** not explicitly present in the provided information.
+                    5.  **Answer Normally**
+                        
+                    **Context: {context}**
+                    The retrieved information from your PDF documents will be inserted here by the RAG system
 
-                    User Question: {prompt}
-
-                    Please provide a comprehensive answer based on the information provided above. If the information is not sufficient or not found in the knowledge base, please mention that clearly.
+                    **User Question: {prompt}**
+                    The actual user's query will be inserted here
+                    
                     """
 
                     # Prepare messages for LLM

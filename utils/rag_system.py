@@ -168,7 +168,6 @@ class SimpleRAGSystem:
 
         except Exception as e:
             return f"Error processing PDF: {str(e)}"
-
     def search(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         """
         Search for relevant documents using FAISS
@@ -198,13 +197,11 @@ class SimpleRAGSystem:
 
             search_results = []
             for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
-                confidence = 1 - (score / 2)  # convert L2 to vector
-                if idx >= 0 and confidence >= 0.8:  # Valid index
-                    search_results.append({
-                        "content": self.documents[idx],
-                        "metadata": self.metadata[idx],
-                        "score": float(score),
-                        "rank": i + 1
+                search_results.append({
+                    "content": self.documents[idx],
+                    "metadata": self.metadata[idx],
+                    "score": float(score),
+                    "rank": i + 1
                     })
 
             return search_results
@@ -459,6 +456,7 @@ def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data")
 
     # Load sample PDF documents
     for pdf_file in data_path.glob("*.pdf"):
+        print(pdf_file)
         print(f"Loading {pdf_file.name}...")
         rag_system.add_pdf_document(str(pdf_file))
 
@@ -473,68 +471,27 @@ def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = 
     # Create sample documents
     sample_docs = [
         {
-            "id": "ai_basics",
-            "title": "Introduction to Artificial Intelligence",
+            "id": "sleeping",
+            "title": "Sleeping Guide",
             "content": """
-            Artificial Intelligence (AI) is a branch of computer science that aims to create intelligent machines 
-            that can perform tasks that typically require human intelligence. These tasks include learning, reasoning, 
-            problem-solving, perception, and language understanding.
+            Sleep was long considered just a block of time when your brain and body shut down. Thanks to sleep research studies done over the
+            past several decades, it is now known that sleep has distinct stages that cycle throughout the night in predictable patterns. How well
+            rested you are and how well you function depend not just on your total sleep time but on how much sleep you get each night and the timing of your sleep stages.
+
+            Your brain and body functions stay active throughout sleep, and each stage of sleep is linked to a specific type of brain waves (distinctive
+            patterns of electrical activity in the brain). Sleep is divided into two basic types: rapid eye movement (REM) sleep and
+            non-REM sleep (with three different stages). (For more information, see “Types of Sleep” on page 5.) Typically,
+
+            sleep begins with non-REM sleep. In stage 1 non-REM sleep, you sleep lightly and can be awakened easily by noises or
+            other disturbances. During this first stage of sleep, your eyes move slowly, your muscles relax, and your heart and breathing rates begin to slow. You then enter
+            stage 2 non-REM sleep, which is defined by slower brain waves with occasional bursts of rapid waves. You spend about half the night in this stage.
+            When you progress into stage 3 nonREM sleep, your brain waves become even slower, and the brain produces extremely slow waves almost exclusively (called Delta waves). 
             
-            Machine Learning is a subset of AI that focuses on the development of algorithms that can learn and 
-            improve from experience without being explicitly programmed. Deep Learning is a further subset of 
-            machine learning that uses neural networks with multiple layers to model and understand complex patterns.
+            Stage 3 is a very deep stage of sleep, during which it is very difficult to be awakened. Children who wet the bed or sleep walk tend to do
+            so during stage 3 of non-REM sleep. Deep sleep is considered the “restorative” stage of sleep that is necessary for feeling well rested
+            and energetic during the day. 
             
-            Natural Language Processing (NLP) is another important area of AI that deals with the interaction 
-            between computers and human language. It enables machines to understand, interpret, and generate 
-            human language in a valuable way.
-            """
-        },
-        {
-            "id": "llm_guide",
-            "title": "Large Language Models Guide",
-            "content": """
-            Large Language Models (LLMs) are AI systems trained on vast amounts of text data to understand and 
-            generate human-like text. Examples include GPT, Claude, and Gemini.
             
-            LLMs work by predicting the next word in a sequence based on the context of previous words. They use 
-            transformer architecture, which allows them to process and understand long-range dependencies in text.
-            
-            Key capabilities of LLMs include:
-            - Text generation and completion
-            - Question answering
-            - Summarization
-            - Translation
-            - Code generation
-            - Creative writing
-            
-            Fine-tuning allows LLMs to be adapted for specific tasks or domains by training on specialized datasets.
-            Prompt engineering is the practice of crafting effective prompts to get better results from LLMs.
-            """
-        },
-        {
-            "id": "streamlit_basics",
-            "title": "Streamlit Development Guide",
-            "content": """
-            Streamlit is an open-source Python library that makes it easy to create and share beautiful, 
-            custom web apps for machine learning and data science.
-            
-            Key features of Streamlit:
-            - Simple Python scripts turn into web apps
-            - No frontend experience required
-            - Interactive widgets for user input
-            - Built-in support for data visualization
-            - Easy deployment options
-            
-            Basic Streamlit components:
-            - st.write(): Display text, data, charts
-            - st.text_input(): Text input widget
-            - st.button(): Button widget
-            - st.selectbox(): Dropdown selection
-            - st.slider(): Slider widget
-            - st.chat_message(): Chat interface components
-            - st.chat_input(): Chat input widget
-            
-            Streamlit apps run from top to bottom on every user interaction, making them reactive and interactive.
             """
         }
     ]
