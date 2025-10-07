@@ -1,574 +1,553 @@
 """
-Chat Application with RAG (Retrieval Augmented Generation)
-Beautiful CSS Styling + Full Features
+RAG System using FAISS for vector similarity search.
+Simple and educational implementation for CS203 lab.
 """
 
-import streamlit as st
-import sys
 import os
+import pickle
+import shutil
+from typing import List, Dict, Any, Optional
 from pathlib import Path
+import numpy as np
 import tempfile
 
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
- 
-from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents, load_sample_documents_for_demo
+# Suppress PyTorch warnings that conflict with Streamlit
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch")
+warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
+
+# Fix tokenizers parallelism warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
+
+# Lazy imports to avoid PyTorch conflicts
+faiss = None
+SentenceTransformer = None
 
 
-def apply_custom_css():
-    """Apply beautiful custom CSS styling"""
-    st.markdown("""
-        <style>
-        /* Main App Background */
-        .stApp {
-            background: linear-gradient(135deg, #1e3c72 0%, #800080 100%);
-        }
-        
-        /* Title Styling */
-        h1 {
-            color: white !important;
-            text-align: center;
-            font-size: 3rem !important;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-            margin-bottom: 0.5rem !important;
-        }
-        
-        /* Subtitle */
-        .subtitle {
-            color: rgba(255,255,255,0.9);
-            text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-        }
-        
-        /* Chat Messages */
-        .stChatMessage {
-            background: rgba(255, 255, 255, 0.2) !important;
-            border-radius: 15px !important;
-            padding: 20px !important;
-            margin: 10px 0 !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-        }
-        
-        /* Make sure text is visible */
-        .stChatMessage p,
-        .stChatMessage div,
-        .stChatMessage span {
-            color: #1a1a1a !important;
-        }
-        
-        /* User Message */
-        [data-testid="stChatMessageContent"] {
-            background: transparent !important;
-            color: #1a1a1a !important;
-        }
-        
-        /* Buttons */
-        .stButton>button {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .stButton>button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-        }
-        
-        /* Sidebar */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-        }
-        
-        [data-testid="stSidebar"] h1,
-        [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3,
-        [data-testid="stSidebar"] .stMarkdown {
-            color: white !important;
-        }
-        
-        [data-testid="stSidebar"] label {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Input Fields */
-        .stTextInput>div>div>input,
-        .stTextArea>div>div>textarea {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-        }
-        
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 5px;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            background: transparent;
-            color: white;
-            border-radius: 10px;
-            padding: 10px 20px;
-            font-weight: bold;
-        }
-        
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        /* Success/Info/Warning Messages */
-        .stSuccess, .stInfo, .stWarning {
-            background: rgba(255,255,255,0.95) !important;
-            border-radius: 10px !important;
-            padding: 15px !important;
-        }
-        
-        /* Expander */
-        .streamlit-expanderHeader {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            color: white !important;
-        }
-        
-        /* Card Style */
-        .info-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px;
-            padding: 30px;
-            margin: 20px 0;
-            color: white;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        }
-        
-        .info-card h2 {
-            color: white !important;
-            margin-top: 0;
-        }
-        
-        /* Chat Input - Fixed */
-        .stChatInput {
-            background: transparent !important;
-        }
-        
-        .stChatInput > div {
-            background: rgba(30, 60, 114, 0.5) !important;
-            border: 2px solid rgba(255,255,255,0.4) !important;
-            border-radius: 25px !important;
-            backdrop-filter: blur(10px) !important;
-        }
-        
-        .stChatInput textarea,
-        .stChatInput input {
-            color: white !important;
-            background: transparent !important;
-            font-size: 16px !important;
-        }
-        
-        .stChatInput textarea::placeholder,
-        .stChatInput input::placeholder {
-            color: rgba(255,255,255,0.8) !important;
-        }
-        
-        /* Fix Error/Exception boxes */
-        .stException, .stAlert {
-            background: rgba(255,255,255,0.95) !important;
-            color: #333 !important;
-            border-radius: 10px !important;
-        }
-        
-        /* Hide Streamlit Branding */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.3);
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.5);
-        }
-        
-        /* Headers in main area */
-        h2, h3 {
-            color: white !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+def _lazy_imports():
+    """Lazy import of heavy dependencies."""
+    global faiss, SentenceTransformer
+    if faiss is None:
+        # Additional environment setup to prevent conflicts
+        os.environ["OMP_NUM_THREADS"] = "1"
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+        import faiss as _faiss  # type: ignore
+        faiss = _faiss
+    if SentenceTransformer is None:
+        from sentence_transformers import SentenceTransformer as _ST  # type: ignore
+        SentenceTransformer = _ST
 
 
-def create_header():
-    """Create beautiful header"""
-    st.markdown("""
-        <div style="text-align: center; padding: 20px 0;">
-            <h1>🤖 RAG Chat Assistant</h1>
-            <p class="subtitle">
-                ✨ AI-Powered Document Intelligence • Enterprise-Ready Starter Code
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
+class SimpleRAGSystem:
+    """
+    A simple RAG system using FAISS for vector similarity search.
+    Educational implementation with clear, understandable code.
+    """
 
+    def __init__(self, data_dir: str = "rag_data", embedding_model: str = "all-MiniLM-L6-v2"):
+        """
+        Initialize the RAG system.
 
-def init_session_state():
-    """Initialize session state variables"""
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "llm_client" not in st.session_state:
-        st.session_state.llm_client = None
-    if "rag_system" not in st.session_state:
-        st.session_state.rag_system = None
-    if "rag_initialized" not in st.session_state:
-        st.session_state.rag_initialized = False
+        Args:
+            data_dir: Directory to store FAISS index and metadata
+            embedding_model: SentenceTransformer model name
+        """
+        self.data_dir = Path(data_dir)
+        self.data_dir.mkdir(exist_ok=True)
 
+        # Lazy initialization to avoid PyTorch conflicts with Streamlit
+        self.model = None
+        self.embedding_model = embedding_model
+        self.embedding_dimension = None
+        self.index = None
 
-def display_chat_messages():
-    """Display chat messages"""
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            if message.get("context_used", False):
-                st.markdown("📚 *Used document context*")
-            st.markdown(message["content"])
+        # Storage for documents and metadata
+        self.documents: List[str] = []
+        self.metadata: List[Dict[str, Any]] = []
 
+        # Try to load existing data
+        self.load_index()
 
-def display_documents():
-    """Display documents in the RAG system"""
-    if st.session_state.rag_system:
-        docs = st.session_state.rag_system.list_documents()
+    def _ensure_model_loaded(self):
+        """Lazy load the model to avoid PyTorch conflicts with Streamlit."""
+        if self.model is None:
+            _lazy_imports()
+            print(f"Loading embedding model: {self.embedding_model}")
+            self.model = SentenceTransformer(self.embedding_model)
+            self.embedding_dimension = self.model.get_sentence_embedding_dimension()
 
-        if docs and not any("error" in doc for doc in docs):
-            st.markdown("### 📄 Documents in Knowledge Base")
-            for doc in docs:
-                with st.expander(f"📄 {doc.get('doc_id', 'Unknown')} ({doc.get('chunks', 0)} chunks)"):
-                    st.json(doc.get('metadata', {}))
-                    if st.button(f"Delete {doc['doc_id']}", key=f"delete_{doc['doc_id']}"):
-                        result = st.session_state.rag_system.delete_document(doc['doc_id'])
-                        st.success(result)
-                        st.rerun()
-        else:
-            st.info("No documents in knowledge base yet.")
+            if self.index is None:
+                # Initialize FAISS index (L2 distance)
+                self.index = faiss.IndexFlatL2(self.embedding_dimension)
 
+    def add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None):
+        """
+        Add a text document to the RAG system.
 
-def main():
-    st.set_page_config(
-        page_title="RAG Chat Assistant",
-        page_icon="🤖",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+        Args:
+            text: The document text
+            doc_id: Unique identifier for the document
+            metadata: Optional metadata dictionary
+        """
+        try:
+            # Ensure model is loaded
+            self._ensure_model_loaded()
 
-    # Apply custom CSS
-    apply_custom_css()
+            # Split text into chunks
+            chunks = self._chunk_text(text)
 
-    # Create header
-    create_header()
+            for i, chunk in enumerate(chunks):
+                if len(chunk.strip()) < 10:  # Skip very short chunks
+                    continue
 
-    # Initialize session state
-    init_session_state()
+                # Create embeddings for the chunk
+                embedding = self.model.encode([chunk])
+                # Normalize for cosine similarity
+                faiss.normalize_L2(embedding)
 
-    # Sidebar configuration
-    with st.sidebar:
-        st.markdown("### ⚙️ Configuration")
+                # Add to index
+                self.index.add(embedding.astype('float32'))
 
-        # Model selection
-        available_models = get_available_models()
-        selected_model = st.selectbox(
-            "🤖 Select Model",
-            available_models,
-            index=0,
-            help="Choose the language model to use"
-        )
+                # Store the chunk and metadata
+                chunk_metadata = metadata.copy() if metadata else {}
+                chunk_metadata.update({
+                    "doc_id": doc_id,
+                    "chunk_id": f"{doc_id}_chunk_{i}",
+                    "chunk_index": i
+                })
 
-        # Temperature slider
-        temperature = st.slider(
-            "🌡️ Temperature",
-            min_value=0.0,
-            max_value=2.0,
-            value=0.7,
-            step=0.1,
-            help="Controls randomness in responses"
-        )
+                self.documents.append(chunk)
+                self.metadata.append(chunk_metadata)
 
-        # Max tokens
-        max_tokens = st.slider(
-            "📏 Max Tokens",
-            min_value=50,
-            max_value=4000,
-            value=2000,
-            step=50,
-            help="Maximum length of response"
-        )
+            # Save updated data
+            self.save_index()
+            return f"Added document '{doc_id}' with {len(chunks)} chunks"
 
-        # RAG settings
-        st.markdown("### 📚 RAG Settings")
-        context_max_tokens = st.slider(
-            "Context Max Tokens",
-            min_value=500,
-            max_value=3000,
-            value=1500,
-            step=100,
-            help="Maximum tokens for context"
-        )
+        except Exception as e:
+            return f"Error adding document: {str(e)}"
 
-        n_results = st.slider(
-            "Search Results",
-            min_value=1,
-            max_value=10,
-            value=5,
-            help="Number of document chunks to retrieve"
-        )
+    def add_pdf_document(self, pdf_path: str, doc_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None):
+        """
+        Add a PDF document to the RAG system.
 
-        st.divider()
+        Args:
+            pdf_path: Path to the PDF file
+            doc_id: Optional document ID (uses filename if not provided)
+            metadata: Optional metadata dictionary
+        """
+        if PyPDF2 is None:
+            return "Error: PyPDF2 not installed. Please install with: pip install PyPDF2"
 
-        # Initialize systems
-        col1, col2 = st.columns(2)
+        try:
+            # Extract text from PDF
+            with open(pdf_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                text = ""
+                for page in pdf_reader.pages:
+                    text += page.extract_text() + "\n"
 
-        with col1:
-            if st.button("🤖 Init Model") or st.session_state.llm_client is None:
-                with st.spinner("Initializing model..."):
-                    st.session_state.llm_client = LLMClient(
-                        model=selected_model,
-                        temperature=temperature,
-                        max_tokens=max_tokens
-                    )
-                st.success("Model ready!")
+            # Use filename as doc_id if not provided
+            if doc_id is None:
+                doc_id = Path(pdf_path).stem
 
-        with col2:
-            if st.button("📚 Init RAG") or st.session_state.rag_system is None:
-                with st.spinner("Initializing RAG system..."):
-                    st.session_state.rag_system = SimpleRAGSystem()
-                    if not st.session_state.rag_initialized:
-                        load_sample_documents_for_demo(st.session_state.rag_system)
-                        st.session_state.rag_initialized = True
-                st.success("RAG ready!")
+            # Add metadata about the PDF
+            pdf_metadata = metadata.copy() if metadata else {}
+            pdf_metadata.update({
+                "source_type": "pdf",
+                "source_path": pdf_path,
+                "num_pages": len(pdf_reader.pages)
+            })
 
-        st.divider()
+            return self.add_text_document(text, doc_id, pdf_metadata)
 
-        # Document management
-        st.markdown("### 📁 Document Management")
+        except Exception as e:
+            return f"Error processing PDF: {str(e)}"
+    
+    def search(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for relevant documents using FAISS
 
-        # File upload
-        uploaded_files = st.file_uploader(
-            "Upload Documents",
-            type=["txt", "pdf"],
-            accept_multiple_files=True,
-            help="Upload text or PDF files to add to knowledge base"
-        )
+        Args:
+            query: Search query text
+            n_results: Number of results to return
 
-        if uploaded_files and st.session_state.rag_system:
-            for uploaded_file in uploaded_files:
-                if st.button(f"Add {uploaded_file.name}", key=f"add_{uploaded_file.name}"):
-                    with st.spinner(f"Processing {uploaded_file.name}..."):
-                        # Save uploaded file temporarily
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{uploaded_file.name}") as tmp_file:
-                            tmp_file.write(uploaded_file.getvalue())
-                            tmp_path = tmp_file.name
+        Returns:
+            List of search results with content and metadata
+        """
+        try:
+            if len(self.documents) == 0:
+                return [{"error": "No documents in the system"}]
 
-                        try:
-                            if uploaded_file.type == "application/pdf":
-                                result = st.session_state.rag_system.add_pdf_document(
-                                    tmp_path,
-                                    uploaded_file.name.split('.')[0]
-                                )
-                            else:
-                                # Text file
-                                content = uploaded_file.getvalue().decode("utf-8")
-                                st.session_state.rag_system.add_text_document(
-                                    content,
-                                    uploaded_file.name.split('.')[0],
-                                    {"source": uploaded_file.name, "type": "uploaded"}
-                                )
-                                result = f"Successfully added text file: {uploaded_file.name}"
+            # Ensure model is loaded
+            self._ensure_model_loaded()
+            # Create embedding for query
+            query_embedding = self.model.encode([query])
+            # Normalize for cosine similarity
+            faiss.normalize_L2(query_embedding)
 
-                            st.success(result)
-                        except Exception as e:
-                            st.error(f"Error processing {uploaded_file.name}: {str(e)}")
-                        finally:
-                            # Clean up temp file
-                            os.unlink(tmp_path)
+            # Search using FAISS
+            n_results = min(n_results, len(self.documents))
+            scores, indices = self.index.search(
+                query_embedding.astype('float32'), n_results)
 
-                        st.rerun()
-
-        # Add text document
-        with st.expander("✏️ Add Text Document"):
-            doc_title = st.text_input("Document Title")
-            doc_content = st.text_area("Document Content", height=200)
-
-            if st.button("Add Text Document") and doc_title and doc_content and st.session_state.rag_system:
-                st.session_state.rag_system.add_text_document(
-                    doc_content,
-                    doc_title.lower().replace(" ", "_"),
-                    {"title": doc_title, "type": "manual_entry"}
-                )
-                st.success(f"Added document: {doc_title}")
-                st.rerun()
-
-        # Load sample documents
-        if st.button("📖 Load Sample Docs") and st.session_state.rag_system:
-            result = load_sample_documents(st.session_state.rag_system)
-            st.success(result)
-            st.rerun()
-
-        st.divider()
-
-        # Quick actions
-        if st.button("🗑️ Clear Chat"):
-            st.session_state.messages = []
-            st.rerun()
-
-        st.divider()
-
-        # Stats
-        if st.session_state.rag_system:
-            stats = st.session_state.rag_system.get_stats()
-            st.markdown("### 📊 Statistics")
-            st.metric("Documents", stats.get("total_documents", 0))
-            st.metric("Chunks", stats.get("total_chunks", 0))
-
-        st.divider()
-        st.markdown("### 📚 About")
-        st.markdown("""
-        **Features:**
-        - Upload PDF and text files
-        - Semantic search across documents
-        - Contextual AI responses
-        - Document management
-        
-        **For Students:**
-        - Experiment with embeddings
-        - Advanced chunking strategies
-        - Metadata filtering
-        - Citation systems
-        """)
-
-    # Main interface - Two tabs
-    tab1, tab2 = st.tabs(["💬 Chat", "📄 Documents"])
-
-    with tab1:
-        # Main chat interface
-        if not st.session_state.llm_client or not st.session_state.rag_system:
-            st.markdown("""
-                <div class="info-card">
-                    <h2>🚀 Welcome to RAG Chat</h2>
-                    <p>
-                        Upload your documents and start asking questions! 
-                        Our AI assistant will search through your knowledge base 
-                        and provide accurate, context-aware answers.
-                    </p>
-                    <ul style="margin-top: 15px;">
-                        <li>📄 Upload PDF and text files</li>
-                        <li>🔍 Intelligent semantic search</li>
-                        <li>💡 Context-aware AI responses</li>
-                        <li>📚 Manage your knowledge base</li>
-                    </ul>
-                </div>
-            """, unsafe_allow_html=True)
-            st.warning("⚠️ Please initialize both Model and RAG system in the sidebar first!")
-            return
-
-        # Display existing chat messages
-        display_chat_messages()
-
-        # Example queries
-        st.markdown("### 💡 Try these example queries:")
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            if st.button("🧠 What is artificial intelligence?"):
-                st.session_state.example_query = "What is artificial intelligence and how does it work?"
-
-        with col2:
-            if st.button("🤖 Explain large language models"):
-                st.session_state.example_query = "How do large language models work and what are their capabilities?"
-
-        with col3:
-            if st.button("🌟 Tell me about Streamlit"):
-                st.session_state.example_query = "What is Streamlit and how do I use it for building apps?"
-
-        # Chat input
-        prompt = st.chat_input("💬 Ask me anything about the documents...")
-
-        # Handle example query
-        if hasattr(st.session_state, 'example_query'):
-            prompt = st.session_state.example_query
-            delattr(st.session_state, 'example_query')
-
-        if prompt:
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-
-            # Display user message
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            # Generate and display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("🔍 Searching documents and generating response..."):
-                    # Get relevant context from RAG system
-                    context = st.session_state.rag_system.get_context_for_query(
-                        prompt, max_context_length=context_max_tokens)
-
-                    # Create enhanced prompt with context
-                    enhanced_prompt = f"""
-                    Based on the following information from the knowledge base, please answer the user's question:
-
-                    {context}
-
-                    User Question: {prompt}
-
-                    Please provide a comprehensive answer based on the information provided above. If the information is not sufficient or not found in the knowledge base, please mention that clearly.
-                    """
-
-                    # Prepare messages for LLM
-                    messages = []
-                    # Add conversation history (excluding current question)
-                    for msg in st.session_state.messages[:-1]:
-                        messages.append({"role": msg["role"], "content": msg["content"]})
-
-                    # Add the enhanced prompt
-                    messages.append({"role": "user", "content": enhanced_prompt})
-
-                    # Get response from LLM
-                    response = st.session_state.llm_client.chat(messages)
-
-                    # Display response
-                    st.markdown(response)
-
-                    # Show retrieved context in expander
-                    with st.expander("📄 Retrieved Context"):
-                        st.markdown(context)
-
-                    # Add assistant response to chat history
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": response,
-                        "context_used": True
+            search_results = []
+            for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
+                search_results.append({
+                    "content": self.documents[idx],
+                    "metadata": self.metadata[idx],
+                    "score": float(score),
+                    "rank": i + 1
                     })
 
-    with tab2:
-        # Document management tab
-        display_documents()
+            return search_results
+
+        except Exception as e:
+            return [{"error": f"Search failed: {str(e)}"}]
+
+    def get_context_for_query(self, query: str, max_context_length: int = 2000) -> str:
+        """
+        Get relevant context for a query, formatted for LLM consumption.
+
+        Args:
+            query: The user's query
+            max_context_length: Maximum length of context to return
+
+        Returns:
+            Formatted context string
+        """
+        search_results = self.search(query, n_results=5)
+
+        if not search_results or "error" in search_results[0]:
+            return "No relevant context found."
+
+        context_parts = []
+        current_length = 0
+
+        for result in search_results:
+            if "error" in result:
+                continue
+
+            content = result["content"]
+            metadata = result.get("metadata", {})
+            doc_id = metadata.get("doc_id", "unknown")
+
+            # Format the context piece
+            context_piece = f"[Source: {doc_id}]\n{content}\n"
+
+            # Check if adding this piece would exceed the limit
+            if current_length + len(context_piece) > max_context_length:
+                break
+
+            context_parts.append(context_piece)
+            current_length += len(context_piece)
+
+        if context_parts:
+            return "Relevant context:\n\n" + "\n---\n".join(context_parts)
+        else:
+            return "No relevant context found."
+
+    def list_documents(self) -> List[Dict[str, Any]]:
+        """List all documents in the RAG system with their metadata."""
+        doc_info = {}
+
+        # Group chunks by document ID
+        for i, meta in enumerate(self.metadata):
+            doc_id = meta.get('doc_id', f'unknown_{i}')
+            if doc_id not in doc_info:
+                doc_info[doc_id] = {
+                    'doc_id': doc_id,
+                    'chunks': 0,
+                    'metadata': meta.copy()
+                }
+                # Remove chunk-specific metadata for display
+                doc_info[doc_id]['metadata'].pop('chunk_id', None)
+                doc_info[doc_id]['metadata'].pop('chunk_index', None)
+
+            doc_info[doc_id]['chunks'] += 1
+
+        return list(doc_info.values())
+
+    def delete_document(self, doc_id: str) -> str:
+        """Delete a document and all its chunks from the RAG system."""
+        try:
+            # Find indices of chunks belonging to this document
+            indices_to_remove = []
+            for i, meta in enumerate(self.metadata):
+                if meta.get('doc_id') == doc_id:
+                    indices_to_remove.append(i)
+
+            if not indices_to_remove:
+                return f"Document '{doc_id}' not found"
+
+            # Remove chunks in reverse order to maintain indices
+            for i in sorted(indices_to_remove, reverse=True):
+                del self.documents[i]
+                del self.metadata[i]
+
+            # Rebuild the FAISS index
+            self._rebuild_index()
+
+            # Save the updated data
+            self.save_index()
+
+            return f"Successfully deleted document '{doc_id}' ({len(indices_to_remove)} chunks)"
+
+        except Exception as e:
+            return f"Error deleting document '{doc_id}': {str(e)}"
+
+    def _rebuild_index(self):
+        """Rebuild the FAISS index from current documents."""
+        if not self.documents:
+            # Create empty index if no documents
+            self._ensure_model_loaded()
+            self.index = faiss.IndexFlatL2(
+                self.embedding_dimension)  # type: ignore
+            return
+
+        # Ensure model is loaded
+        self._ensure_model_loaded()
+
+        # Create new index
+        self.index = faiss.IndexFlatL2(
+            self.embedding_dimension)  # type: ignore
+
+        # Generate embeddings for all documents
+        embeddings = self.model.encode(self.documents)
+        # Normalize for cosine similarity
+        faiss.normalize_L2(embeddings)  # type: ignore
+        # Add to index
+        self.index.add(embeddings.astype('float32'))  # type: ignore
+
+    def _chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
+        """
+        Split text into overlapping chunks.
+
+        Args:
+            text: Input text to chunk
+            chunk_size: Target size of each chunk
+            overlap: Number of characters to overlap between chunks
+
+        Returns:
+            List of text chunks
+        """
+        if len(text) <= chunk_size:
+            return [text]
+
+        chunks = []
+        start = 0
+
+        while start < len(text):
+            end = start + chunk_size
+
+            # Try to end at a sentence boundary
+            if end < len(text):
+                # Look for sentence endings near the chunk boundary
+                for i in range(end, max(start + chunk_size - 100, start), -1):
+                    if text[i] in '.!?':
+                        end = i + 1
+                        break
+
+            chunk = text[start:end].strip()
+            if chunk:
+                chunks.append(chunk)
+
+            start = end - overlap
+
+            # Prevent infinite loops
+            if start >= end:
+                start = end
+
+        return chunks
+
+    def save_index(self):
+        """Save the FAISS index and metadata to disk."""
+        try:
+            if self.index is not None:
+                # Save FAISS index
+                index_path = self.data_dir / "faiss_index.bin"
+                faiss.write_index(self.index, str(index_path))
+
+            # Save documents and metadata
+            data_path = self.data_dir / "documents.pkl"
+            with open(data_path, 'wb') as f:
+                pickle.dump({
+                    'documents': self.documents,
+                    'metadata': self.metadata,
+                    'embedding_dimension': self.embedding_dimension,
+                    'embedding_model': self.embedding_model
+                }, f)
+
+        except Exception as e:
+            print(f"Error saving index: {e}")
+
+    def load_index(self):
+        """Load the FAISS index and metadata from disk."""
+        try:
+            index_path = self.data_dir / "faiss_index.bin"
+            data_path = self.data_dir / "documents.pkl"
+
+            if data_path.exists():
+                # Load documents and metadata
+                with open(data_path, 'rb') as f:
+                    data = pickle.load(f)
+                    self.documents = data.get('documents', [])
+                    self.metadata = data.get('metadata', [])
+                    self.embedding_dimension = data.get('embedding_dimension')
+                    saved_model = data.get('embedding_model')
+
+                    # Check if model changed
+                    if saved_model != self.embedding_model:
+                        print(
+                            f"Model changed from {saved_model} to {self.embedding_model}")
+                        return
+
+                # Load FAISS index if it exists
+                if index_path.exists() and self.embedding_dimension:
+                    _lazy_imports()
+                    self.index = faiss.read_index(str(index_path))
+                    print(f"Loaded {len(self.documents)} documents from disk")
+
+        except Exception as e:
+            print(f"Error loading index: {e}")
+            self.documents = []
+            self.metadata = []
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get statistics about the RAG system."""
+        doc_ids = set()
+        for meta in self.metadata:
+            if 'doc_id' in meta:
+                doc_ids.add(meta['doc_id'])
+
+        return {
+            "total_chunks": len(self.documents),
+            "total_documents": len(doc_ids),
+            "embedding_model": self.embedding_model,
+            "embedding_dimension": self.embedding_dimension,
+            "has_index": self.index is not None,
+            "data_directory": str(self.data_dir)
+        }
 
 
+def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
+    """
+    Load sample documents into the RAG system for testing.
+    After loading, moves files to backup directory (data_backup).
+    """
+    data_path = Path(data_dir)
+    backup_path = Path("./data_backup")
+    
+    if not data_path.exists():
+        print(f"Sample data directory {data_dir} not found")
+        return
+    
+    # Create backup directory if it doesn't exist
+    backup_path.mkdir(exist_ok=True)
+    
+    # Load sample text documents
+    for txt_file in data_path.glob("*.txt"):
+        print(f"Loading {txt_file.name}...")
+        with open(txt_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        rag_system.add_text_document(
+            content,
+            txt_file.stem,
+            {"source_type": "text", "source_path": str(txt_file)}
+        )
+        
+        # Move file to backup
+        destination = backup_path / txt_file.name
+        if destination.exists():
+            # Add timestamp if file exists
+            timestamp = int(os.path.getmtime(str(txt_file)))
+            destination = backup_path / f"{txt_file.stem}_{timestamp}{txt_file.suffix}"
+        shutil.move(str(txt_file), str(destination))
+        print(f"Moved {txt_file.name} to backup")
+    
+    # Load sample PDF documents
+    for pdf_file in data_path.glob("*.pdf"):
+        if not pdf_file.name.startswith("_"):
+            print(f"Loading {pdf_file.name}...")
+            rag_system.add_pdf_document(str(pdf_file))
+            
+            # Move file to backup
+            destination = backup_path / pdf_file.name
+            if destination.exists():
+                # Add timestamp if file exists
+                timestamp = int(os.path.getmtime(str(pdf_file)))
+                destination = backup_path / f"{pdf_file.stem}_{timestamp}{pdf_file.suffix}"
+            shutil.move(str(pdf_file), str(destination))
+            print(f"Moved {pdf_file.name} to backup")
+    
+    print("Sample documents loaded and moved to backup!")
+
+
+def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
+    """Load sample documents for demonstration"""
+    data_path = Path(data_dir)
+    data_path.mkdir(exist_ok=True)
+
+    # Create sample documents
+    sample_docs = [
+        {
+            "id": "sleeping",
+            "title": "Sleeping Guide",
+            "content": """
+            Sleep was long considered just a block of time when your brain and body shut down. Thanks to sleep research studies done over the
+            past several decades, it is now known that sleep has distinct stages that cycle throughout the night in predictable patterns. How well
+            rested you are and how well you function depend not just on your total sleep time but on how much sleep you get each night and the timing of your sleep stages.
+
+            Your brain and body functions stay active throughout sleep, and each stage of sleep is linked to a specific type of brain waves (distinctive
+            patterns of electrical activity in the brain). Sleep is divided into two basic types: rapid eye movement (REM) sleep and
+            non-REM sleep (with three different stages). (For more information, see "Types of Sleep" on page 5.) Typically,
+
+            sleep begins with non-REM sleep. In stage 1 non-REM sleep, you sleep lightly and can be awakened easily by noises or
+            other disturbances. During this first stage of sleep, your eyes move slowly, your muscles relax, and your heart and breathing rates begin to slow. You then enter
+            stage 2 non-REM sleep, which is defined by slower brain waves with occasional bursts of rapid waves. You spend about half the night in this stage.
+            When you progress into stage 3 nonREM sleep, your brain waves become even slower, and the brain produces extremely slow waves almost exclusively (called Delta waves). 
+            
+            Stage 3 is a very deep stage of sleep, during which it is very difficult to be awakened. Children who wet the bed or sleep walk tend to do
+            so during stage 3 of non-REM sleep. Deep sleep is considered the "restorative" stage of sleep that is necessary for feeling well rested
+            and energetic during the day. 
+            
+            
+            """
+        }
+    ]
+
+    for doc in sample_docs:
+        rag_system.add_text_document(
+            text=doc["content"],
+            doc_id=doc["id"],
+            metadata={"title": doc["title"], "type": "sample_document"}
+        )
+
+    return f"Loaded {len(sample_docs)} sample documents into RAG system"
+
+
+# Example usage
 if __name__ == "__main__":
-    main()
+    # Create RAG system
+    rag = SimpleRAGSystem()
+
+    # Add some sample text
+    rag.add_text_document(
+        "Python is a high-level programming language known for its simplicity and readability.",
+        "python_intro",
+        {"topic": "programming", "language": "python"}
+    )
+
+    # Search for relevant content
+    results = rag.search("What is Python?", n_results=3)
+    for result in results:
+        print(f"Score: {result['score']:.3f}")
+        print(f"Content: {result['content'][:100]}...")
+        print(f"Metadata: {result['metadata']}")
+        print()

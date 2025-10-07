@@ -191,7 +191,7 @@ def create_header():
     
     # อ่านรูปจาก static folder
     try:
-        with open("static/CN.png", "rb") as f:
+        with open("Picture/CN.png", "rb") as f:
             img = base64.b64encode(f.read()).decode()
         img_url = f"data:image/png;base64,{img}"
     except:
@@ -361,7 +361,8 @@ def main():
                 with st.spinner("Initializing RAG system..."):
                     st.session_state.rag_system = SimpleRAGSystem()
                     if not st.session_state.rag_initialized:
-                        load_sample_documents_for_demo(st.session_state.rag_system)
+                        #Load data folder
+                        load_sample_documents(st.session_state.rag_system, "./data")
                         st.session_state.rag_initialized = True
                 st.success("RAG ready!")
 
