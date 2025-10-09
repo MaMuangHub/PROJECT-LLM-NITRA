@@ -19,6 +19,9 @@ class LLMClient:
         self.max_tokens = max_tokens
 
         # Set API keys
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            os.environ["GROQ_API_KEY"] = groq_key
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
             os.environ["OPENAI_API_KEY"] = openai_key
@@ -28,9 +31,7 @@ class LLMClient:
         google_key = os.getenv("GOOGLE_API_KEY")
         if google_key:
             os.environ["GOOGLE_API_KEY"] = google_key
-        groq_key = os.getenv("GROQ_API_KEY")
-        if groq_key:
-            os.environ["GROQ_API_KEY"] = groq_key
+        
 
     def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """

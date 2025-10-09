@@ -1,21 +1,25 @@
 """
-Chat Application with Web Search Tool Calling
-Demonstrates function calling with web search capabilities
+Chat Application with Web Search Tool Calling - FIXED VERSION
 """
 
 import streamlit as st
 import sys
 import os
-import json
-from pathlib import Path 
+from pathlib import Path
+from dotenv import load_dotenv
 
+# โหลด .env อย่างชัดเจน
+load_dotenv(override=True)
+
+serper = os.getenv("SERPER_API_KEY")
+tavily = os.getenv("TAVILY_API_KEY")
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
 from utils.llm_client import LLMClient, get_available_models
 from utils.search_tools import WebSearchTool, format_search_results
-from utils.conversion_tools import Conversion, format_search_results
 
 def init_session_state():
     """Initialize session state variables"""
@@ -25,82 +29,46 @@ def init_session_state():
         st.session_state.llm_client = None
     if "search_tool" not in st.session_state:
         st.session_state.search_tool = WebSearchTool()
-    if "conversion_tools" not in st.session_state:
-        st.session_state.conversion_tools = Conversion()
-
-def get_search_function_schema():
-    """Define the search function schema for tool calling"""
-    return {
-        "name": "web_search",
-        "description": "Search the web for current information about a topic",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The search query to look up information"
-                },
-                "num_results": {
-                    "type": "integer",
-                    "description": "Number of search results to return (default: 5)",
-                    "default": 5
-                }
-            },
-            "required": ["query"]
-        }
-    }
-
 
 def execute_search(query: str, num_results: int = 5):
     """Execute web search and return formatted results"""
-    results = st.session_state.conversion_tools.search(query, num_results)
-    return format_search_results(results)
-
+    print(f"\n{'='*60}")
+    print(f"🔍 execute_search() called with query: '{query}'")
+    print(f"{'='*60}")
+    
+    # ใช้ search_tool ไม่ใช่ conversion_tools
+    results = st.session_state.search_tool.search(query, num_results)
+    
+    print(f"📊 Results received: {len(results)} items")
+    if results and "error" in str(results[0]):
+        print(f"❌ Error in results: {results}")
+    else:
+        print(f"✅ Search successful!")
+    
+    formatted = format_search_results(results)
+    print(f"📝 Formatted output length: {len(formatted)} chars\n")
+    
+    return formatted
 
 def handle_tool_calls(message_content: str):
     """Handle potential tool calls in the message"""
     message_lower = message_content.lower()
 
-    # Enhanced tool calling detection
     search_triggers = [
-        # Explicit search requests
         "search:", "search for", "look up", "find information", "google",
-
-        # Current/real-time information requests
         "current", "latest", "recent", "today", "now", "this week", "2024", "2025",
-
-        # News and events
         "news", "update", "happened", "breaking", "announcement",
-
-        # Market and weather data
         "stock", "price", "weather", "temperature", "forecast",
-
-        # Sports and games
         "game", "match", "score", "won", "championship", "tournament",
-
-        # Social media and trends
         "trending", "viral", "popular",
-
-        # Questions about recent developments
         "what's new", "what happened", "any updates",
-
-        #currency converso
         "convert", "conversion", "exchange rate", "currency",
-        # Common currency codes
         "USD", "EUR", "GBP", "JPY", "CNY", "BTC", "ETH",
-        # Exchange phrases
-        "to EUR", "to USD", "to GBP", "in USD", "in EURs",
-        # Rate questions
-        "how much is", "what's the rate", "exchange", "rate for"
     ]
 
-    # Check for search triggers
-    should_search = any(
-        trigger in message_lower for trigger in search_triggers)
+    should_search = any(trigger in message_lower for trigger in search_triggers)
 
-    # Also check for time-sensitive questions
-    time_words = ["today", "now", "current",
-                  "latest", "recent", "2024", "2025"]
+    time_words = ["today", "now", "current", "latest", "recent", "2024", "2025"]
     question_words = ["what", "how", "when", "where", "who", "why"]
 
     has_time_word = any(word in message_lower for word in time_words)
@@ -110,10 +78,8 @@ def handle_tool_calls(message_content: str):
         should_search = True
 
     if should_search:
-        # Extract search query (improved approach)
         query = message_content
-
-        # Remove common prefixes
+        
         prefixes_to_remove = [
             "search:", "search for", "look up", "find information about",
             "tell me about", "what is", "what are", "how is"
@@ -124,30 +90,31 @@ def handle_tool_calls(message_content: str):
                 query = query[len(prefix):].strip()
                 break
 
-        # Clean up the query (be more careful with question marks)
         if query.endswith("?"):
             query = query[:-1].strip()
         if not query:
             query = message_content
 
-        # Perform search
+        print(f"\n🎯 Search triggered! Query: '{query}'")
         search_results = execute_search(query, 5)
 
-        # Create enhanced prompt with search results
+        # ตรวจสอบว่าการค้นหาสำเร็จหรือไม่
+        if "Error:" in search_results or "No search results" in search_results:
+            st.error(f"⚠️ การค้นหาล้มเหลว!\n\n{search_results}")
+            return message_content, False
+
         enhanced_prompt = f"""
         User Query: {message_content}
-        
-        I have searched the web and found the following current information:
-        
-        {search_results}
-        
-        Please provide a comprehensive answer based on this information.
-        """
 
+        I have searched the web and found the following current information:
+
+        {search_results}
+
+        Please provide a comprehensive answer based on this information.
+            """
         return enhanced_prompt, True
 
     return message_content, False
-
 
 def display_chat_messages():
     """Display chat messages"""
@@ -157,7 +124,6 @@ def display_chat_messages():
                 st.markdown("🔍 *Used web search*")
             st.markdown(message["content"])
 
-
 def main():
     st.set_page_config(
         page_title="Chat with Web Search",
@@ -166,62 +132,37 @@ def main():
     )
 
     st.title("🔍 Chat with Web Search")
-    st.markdown(
-        "AI chat with **automatic** web search capabilities - Advanced starter code!")
+    st.markdown("AI chat with **automatic** web search - FIXED VERSION")
 
-    st.info("🤖 **Smart Tool Calling**: I automatically detect when you need current information and search the web! Try asking about weather, news, stock prices, or recent events.")
-
-    # Initialize session state
     init_session_state()
 
-    # Sidebar configuration
+    # Sidebar
     with st.sidebar:
         st.header("⚙️ Configuration")
 
-        # Model selection
         available_models = get_available_models()
         selected_model = st.selectbox(
             "Select Model",
             available_models,
-            index=0,
-            help="Choose the language model to use"
+            index=0
         )
 
-        # Temperature slider
         temperature = st.slider(
             "Temperature",
             min_value=0.0,
             max_value=2.0,
             value=0.7,
-            step=0.1,
-            help="Controls randomness in responses"
+            step=0.1
         )
 
-        # Max tokens
         max_tokens = st.slider(
             "Max Tokens",
             min_value=50,
             max_value=4000,
             value=2000,
-            step=50,
-            help="Maximum length of response"
+            step=50
         )
 
-        # Search settings
-        st.subheader("🔍 Search Settings")
-        auto_search = st.checkbox(
-            "Auto Search",
-            value=True,
-            help="Automatically search when needed"
-        )
-
-        search_api = st.selectbox(
-            "Search API",
-            ["serper", "tavily"],
-            help="Choose search API to use"
-        )
-
-        # Initialize LLM client
         if st.button("Initialize Model") or st.session_state.llm_client is None:
             with st.spinner("Initializing model..."):
                 st.session_state.llm_client = LLMClient(
@@ -233,126 +174,78 @@ def main():
 
         st.divider()
 
-        # Clear chat button
         if st.button("🗑️ Clear Chat", type="secondary"):
             st.session_state.messages = []
             st.rerun()
 
-        # API status
         st.subheader("🔧 API Status")
         serper_key = os.getenv("SERPER_API_KEY")
         tavily_key = os.getenv("TAVILY_API_KEY")
 
-        st.write(
-            f"**Serper API:** {'✅ Configured' if serper_key else '❌ Not configured'}")
-        st.write(
-            f"**Tavily API:** {'✅ Configured' if tavily_key else '❌ Not configured'}")
+        st.write(f"**Serper API:** {'✅ Configured' if serper_key else '❌ Not configured'}")
+        st.write(f"**Tavily API:** {'✅ Configured' if tavily_key else '❌ Not configured'}")
 
+        if serper_key:
+            st.code(f"Key: {serper_key[:10]}...{serper_key[-5:]}")
+        
         if not serper_key and not tavily_key:
-            st.warning(
-                "⚠️ No search APIs configured. Add API keys to .env file.")
+            st.error("⚠️ No search APIs configured!")
+            st.info("Add to .env file:\nSERPER_API_KEY=your_key\nor\nTAVILY_API_KEY=your_key")
 
-        st.divider()
-        st.markdown("### 📚 About")
-        st.markdown("""
-        This advanced chat app demonstrates:
-        - Web search integration
-        - Tool calling concepts
-        - Real-time information retrieval
-        - Enhanced context for LLMs
-        
-        **Smart Search Triggers:**
-        - Automatic detection for current events, weather, stock prices
-        - Time-sensitive questions (today, latest, recent, 2024, etc.)
-        - Explicit search requests ("search:", "look up", etc.)
-        - Questions about news, updates, and recent developments
-        
-        **For Students:**
-        - Implement proper function calling
-        - Add more tools (calculator, weather, etc.)
-        - Improve search query extraction
-        - Add search result caching
-        """)
-
-    # Main chat interface
     if not st.session_state.llm_client:
         st.warning("⚠️ Please initialize a model in the sidebar first!")
         return
 
-    # Display existing chat messages
     display_chat_messages()
 
-    # Example queries
-    st.markdown("### 💡 Try these example queries:")
+    st.markdown("### 💡 Try these:")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("🌤️ Current weather in Tokyo"):
-            example_query = "What's the current weather in Tokyo today?"
-            st.session_state.example_query = example_query
+        if st.button("🌤️ Weather in Tokyo"):
+            st.session_state.example_query = "What's the weather in Tokyo today?"
 
     with col2:
-        if st.button("📈 Latest AI developments"):
-            example_query = "What are the latest developments in artificial intelligence in 2024?"
-            st.session_state.example_query = example_query
+        if st.button("📈 AI News 2025"):
+            st.session_state.example_query = "Latest AI developments in 2025"
 
     with col3:
-        if st.button("💼 Stock market today"):
-            example_query = "How is the stock market performing today?"
-            st.session_state.example_query = example_query
+        if st.button("💼 Stock Market"):
+            st.session_state.example_query = "How is the stock market today?"
 
-    # Chat input
-    prompt = st.chat_input(
-        "Ask anything... I'll automatically search when you need current info! 🔍")
+    prompt = st.chat_input("Ask anything...")
 
-    # Handle example query
     if hasattr(st.session_state, 'example_query'):
         prompt = st.session_state.example_query
         delattr(st.session_state, 'example_query')
 
     if prompt:
-        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
 
-        # Display user message
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Handle search and generate response
         with st.chat_message("assistant"):
             with st.spinner("Processing..."):
-                # Check if search is needed
                 enhanced_prompt, search_used = handle_tool_calls(prompt)
 
                 if search_used:
-                    st.markdown(
-                        "🔍 *Searching the web for current information...*")
+                    st.markdown("🔍 *Searching the web...*")
 
-                # Prepare messages for LLM
                 messages = []
-                # All except the last message
                 for msg in st.session_state.messages[:-1]:
-                    messages.append(
-                        {"role": msg["role"], "content": msg["content"]})
+                    messages.append({"role": msg["role"], "content": msg["content"]})
 
-                # Add the enhanced prompt
                 messages.append({"role": "user", "content": enhanced_prompt})
-                # if enhanced_prompt != prompt and search_used:
-                #    st.markdown(" 🎉 * Necessary information retrieved successfully!*")
 
-                # Get response from LLM
                 response = st.session_state.llm_client.chat(messages)
-
-                # Display response
                 st.markdown(response)
 
-                # Add assistant response to chat history
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": response,
                     "search_used": search_used
                 })
-
 
 if __name__ == "__main__":
     main()

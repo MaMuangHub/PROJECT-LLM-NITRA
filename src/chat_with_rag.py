@@ -9,12 +9,20 @@ import sys
 import os
 from pathlib import Path
 import tempfile
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+serper = os.getenv("SERPER_API_KEY")
+tavily = os.getenv("TAVILY_API_KEY")
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
  
-from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents, load_sample_documents_for_demo
+from utils.llm_client import LLMClient,  get_available_models
+from utils.rag_system import SimpleRAGSystem,load_sample_documents, load_sample_documents_for_demo
+from utils.search_tools import WebSearchTool, format_search_results
 
 def init_session_state():
     """Initialize session state variables"""
@@ -26,6 +34,8 @@ def init_session_state():
         st.session_state.rag_system = None
     if "rag_initialized" not in st.session_state:
         st.session_state.rag_initialized = False
+    if "search_tool" not in st.session_state:
+        st.session_state.search_tool = WebSearchTool()
 
 
 def display_chat_messages():
@@ -54,6 +64,26 @@ def display_documents():
                         st.rerun()
         else:
             st.info("No documents in knowledge base yet.")
+
+def execute_search(query: str, num_results: int = 5):
+    """Execute web search and return formatted results"""
+    print(f"\n{'='*60}")
+    print(f"🔍 execute_search() called with query: '{query}'")
+    print(f"{'='*60}")
+    
+    # ใช้ search_tool ไม่ใช่ conversion_tools
+    results = st.session_state.search_tool.search(query, num_results)
+    
+    print(f"📊 Results received: {len(results)} items")
+    if results and "error" in str(results[0]):
+        print(f"❌ Error in results: {results}")
+    else:
+        print(f"✅ Search successful!")
+    
+    formatted = format_search_results(results)
+    print(f"📝 Formatted output length: {len(formatted)} chars\n")
+    
+    return formatted
 
 
 def main():
@@ -140,7 +170,7 @@ def main():
                 with st.spinner("Initializing RAG system..."):
                     st.session_state.rag_system = SimpleRAGSystem()
                     if not st.session_state.rag_initialized:
-                        load_sample_documents_for_demo(st.session_state.rag_system)
+                        load_sample_documents(st.session_state.rag_system)
                         st.session_state.rag_initialized = True
                 st.success("RAG ready!")
 
@@ -298,7 +328,10 @@ def main():
 
                     # Create enhanced prompt with context
                     enhanced_prompt = f"""
-                    Based on the following information from the knowledge base, please answer the user's question:
+                    Based on the following information from the knowledge base, please answer the user's question and predict what gonna happen in future if the thing in question keep happen to them
+                    if the question isn't about sleeping you must answer 'it not about sleeping' 
+                    but if the question is about sleeping but it out of knowledge you must not try to answer you must answer 'i don't know':
+                    if question is not english convent your answer in them language except your answer is "i don't know" and "it not about sleeping"
 
                     {context}
 
@@ -320,6 +353,12 @@ def main():
 
                     # Get response from LLM
                     response = st.session_state.llm_client.chat(messages)
+
+                    if 'not about sleeping' in response:
+                        response = 'Sorry but your question is out of my scope, please ask me something about sleeping'
+
+                    if "don't know" in response:
+                        response = execute_search(prompt)
 
                     # Display response
                     st.markdown(response)

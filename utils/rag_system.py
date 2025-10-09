@@ -85,6 +85,7 @@ class SimpleRAGSystem:
             if self.index is None:
                 # Initialize FAISS index (L2 distance)
                 self.index = faiss.IndexFlatL2(self.embedding_dimension)
+                
 
     def add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None):
         """
@@ -141,6 +142,7 @@ class SimpleRAGSystem:
             doc_id: Optional document ID (uses filename if not provided)
             metadata: Optional metadata dictionary
         """
+
         if PyPDF2 is None:
             return "Error: PyPDF2 not installed. Please install with: pip install PyPDF2"
 
@@ -198,8 +200,8 @@ class SimpleRAGSystem:
 
             search_results = []
             for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
-                confidence = 1 - (score / 2)  # convert L2 to vector
-                if idx >= 0 and confidence >= 0.8:  # Valid index
+                #confidence = 1 - (score / 2)  # convert L2 to vector
+                if idx >= 0:  # Valid indexand confidence >= 0.8
                     search_results.append({
                         "content": self.documents[idx],
                         "metadata": self.metadata[idx],
@@ -355,11 +357,17 @@ class SimpleRAGSystem:
                         end = i + 1
                         break
 
+            while text[end] != ' ':
+                end += 1
+
             chunk = text[start:end].strip()
             if chunk:
                 chunks.append(chunk)
 
             start = end - overlap
+
+            while text[start] != ' ':
+                start -= 1
 
             # Prevent infinite loops
             if start >= end:
@@ -437,7 +445,7 @@ class SimpleRAGSystem:
         }
 
 
-def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
+def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./rag_data"):
     """
     Load sample documents into the RAG system for testing.
     """
@@ -473,70 +481,20 @@ def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = 
     # Create sample documents
     sample_docs = [
         {
-            "id": "ai_basics",
-            "title": "Introduction to Artificial Intelligence",
+            "id": "insomnia",
+            "title": "the disorder that make you hard to sleep",
             "content": """
-            Artificial Intelligence (AI) is a branch of computer science that aims to create intelligent machines 
-            that can perform tasks that typically require human intelligence. These tasks include learning, reasoning, 
-            problem-solving, perception, and language understanding.
-            
-            Machine Learning is a subset of AI that focuses on the development of algorithms that can learn and 
-            improve from experience without being explicitly programmed. Deep Learning is a further subset of 
-            machine learning that uses neural networks with multiple layers to model and understand complex patterns.
-            
-            Natural Language Processing (NLP) is another important area of AI that deals with the interaction 
-            between computers and human language. It enables machines to understand, interpret, and generate 
-            human language in a valuable way.
+            Insomnia is the most common sleep disorder affecting the population and is the most common
+            disease encountered in the practice of sleep medicine.Insomniacs complain of difficulty initiating and
+            maintaining sleep, including early morning awakening and non-restorative sleep occurring 3-4 times per week
+            persisting for more than a month and associated with an impairment of daytime function. Acute insomnia may
+            be associated with an identifiable stressful situation. Most cases of insomnia are chronic and co-morbid
+            with other conditions which include psychiatric, medical and neurological disorders or drug and alcohol
+            abuse31. In some cases, no cause is found and the condition is labelled idiopathic or primary insomnia or
+            psychophysiological insomnia.
             """
         },
-        {
-            "id": "llm_guide",
-            "title": "Large Language Models Guide",
-            "content": """
-            Large Language Models (LLMs) are AI systems trained on vast amounts of text data to understand and 
-            generate human-like text. Examples include GPT, Claude, and Gemini.
-            
-            LLMs work by predicting the next word in a sequence based on the context of previous words. They use 
-            transformer architecture, which allows them to process and understand long-range dependencies in text.
-            
-            Key capabilities of LLMs include:
-            - Text generation and completion
-            - Question answering
-            - Summarization
-            - Translation
-            - Code generation
-            - Creative writing
-            
-            Fine-tuning allows LLMs to be adapted for specific tasks or domains by training on specialized datasets.
-            Prompt engineering is the practice of crafting effective prompts to get better results from LLMs.
-            """
-        },
-        {
-            "id": "streamlit_basics",
-            "title": "Streamlit Development Guide",
-            "content": """
-            Streamlit is an open-source Python library that makes it easy to create and share beautiful, 
-            custom web apps for machine learning and data science.
-            
-            Key features of Streamlit:
-            - Simple Python scripts turn into web apps
-            - No frontend experience required
-            - Interactive widgets for user input
-            - Built-in support for data visualization
-            - Easy deployment options
-            
-            Basic Streamlit components:
-            - st.write(): Display text, data, charts
-            - st.text_input(): Text input widget
-            - st.button(): Button widget
-            - st.selectbox(): Dropdown selection
-            - st.slider(): Slider widget
-            - st.chat_message(): Chat interface components
-            - st.chat_input(): Chat input widget
-            
-            Streamlit apps run from top to bottom on every user interaction, making them reactive and interactive.
-            """
-        }
+        
     ]
 
     for doc in sample_docs:
@@ -555,14 +513,16 @@ if __name__ == "__main__":
     rag = SimpleRAGSystem()
 
     # Add some sample text
-    rag.add_text_document(
-        "Python is a high-level programming language known for its simplicity and readability.",
-        "python_intro",
-        {"topic": "programming", "language": "python"}
-    )
+    #add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None)
+    #add_pdf_document(self, pdf_path: str, doc_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None)
+    # rag.add_pdf_document(
+    #     "/home/dana456/Desktop/PROJECT-LLM/rag_data/ibyt10i2p126.pdf",
+    #     "sleeping disorder",
+    #     {"topic": "sleeping disorder"}
+    # )
 
     # Search for relevant content
-    results = rag.search("What is Python?", n_results=3)
+    results = rag.search("sleep", n_results=3)
     for result in results:
         print(f"Score: {result['score']:.3f}")
         print(f"Content: {result['content'][:100]}...")
