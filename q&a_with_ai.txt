@@ -5,27 +5,33 @@
 ✓ การนอนที่ดีเป็นอย่างไร
 ✓ การนอนแต่ล่ะช่วงวัยควรนอนกี่ชั่วโมง
 ✓ โรคที่เกี่ยวข้องเกี่ยวกับการนอน
-การเพิ่มคุณภาพของการนอนทำอย่างไร
-ทำไมถึงนอนไม่หลับ? มีวิธีแก้อาการนอนไม่หลับ (Insomnia) ง่ายๆ ที่บ้านไหม?
-การนอนดึกมากๆ เป็นประจำ มีผลเสียต่อสุขภาพในระยะยาวอย่างไรบ้าง?
-ทำอย่างไรให้หลับง่ายขึ้น และหลับลึกตลอดคืน?
-- อาการนอนกรน เป็นเรื่องอันตรายไหม? ควรไปพบแพทย์เมื่อไหร่?
-กาแฟหรือคาเฟอีน ควรหยุดดื่มก่อนเข้านอนกี่ชั่วโมง?
-การงีบหลับ (Nap) ตอนกลางวันควรนานแค่ไหนถึงจะดี และไม่รบกวนการนอนตอนกลางคืน?
-ควรเลือกที่นอน (Mattress) หรือหมอนแบบไหน ให้เหมาะสมกับท่านอนของเรา?
+✓ การเพิ่มคุณภาพของการนอนทำอย่างไร
+✓ ช่วยจัดตารางการนอนให้ฉันหน่อย
+✓ ฉันนอนไม่หลับเพราะคิดมาก
+X ถ้าฉันอยากหลับแบบไม่ตื่นเลย
+✓ RAG ทำไมถึงนอนไม่หลับ? มีวิธีแก้อาการนอนไม่หลับ (Insomnia) ง่ายๆ ที่บ้านไหม?
+✓ RAG การนอนดึกมากๆ เป็นประจำ มีผลเสียต่อสุขภาพในระยะยาวอย่างไรบ้าง?
+✓ ทำอย่างไรให้หลับง่ายขึ้น และหลับลึกตลอดคืน?
+✓ อาการนอนกรน เป็นเรื่องอันตรายไหม? ควรไปพบแพทย์เมื่อไหร่?
+✓ กาแฟหรือคาเฟอีน ควรหยุดดื่มก่อนเข้านอนกี่ชั่วโมง?
+✓ การงีบหลับ (Nap) ตอนกลางวันควรนานแค่ไหนถึงจะดี และไม่รบกวนการนอนตอนกลางคืน?
+✓ ควรเลือกที่นอน (Mattress) หรือหมอนแบบไหน ให้เหมาะสมกับท่านอนของเรา?
 ถ้าตื่นกลางดึกบ่อยๆ ควรทำอย่างไรดี? ควรลุกขึ้นมาทำอะไร หรือพยายามนอนต่อ?
 การใช้โทรศัพท์มือถือหรือดูทีวี ก่อนนอนมีผลเสียต่อคุณภาพการนอนอย่างไรบ้าง?
 อาการ "นอนไหลตาย" หรือภาวะหยุดหายใจขณะหลับ (Sleep Apnea) คืออะไร และมีอาการอย่างไร?
 ท่านอนแบบไหน ที่ถือว่าดีต่อสุขภาพที่สุด?
-How many hours of sleep do adults actually need?
-What are some effective home remedies for insomnia?
-Why do I keep waking up in the middle of the night?
-How can I fall asleep faster and stay asleep longer?
-Is taking a nap during the day a good idea, and if so, how long should it be?
-What's the best time to go to bed and wake up for optimal health?
-How does screen time (phones, TV) before bed affect sleep quality?
-What are the signs of a serious sleep disorder like sleep apnea?
-When should I stop drinking caffeine before bedtime?
-What's the best sleeping position for overall health and to reduce back pain?
+✓ RAG How many hours of sleep do adults actually need?
+✓ What are some effective home remedies for insomnia?
+✓ Why do I keep waking up in the middle of the night?
+✓ How can I fall asleep faster and stay asleep longer?
+✓ Is taking a nap during the day a good idea, and if so, how long should it be?
+✓ What's the best time to go to bed and wake up for optimal health?
+✓ RAG How does screen time (phones, TV) before bed affect sleep quality?
+✓ What are the signs of a serious sleep disorder like sleep apnea?
+✓ When should I stop drinking caffeine before bedtime?
+✓ What's the best sleeping position for overall health and to reduce back pain?
 Do weighted blankets really work to improve sleep and reduce anxiety?
 How can I establish a consistent and healthy bedtime routine?
+
+? นอนให้ครบ 8 ชั่วโมง ใน 30 นาที ทำยังไง
+? ถ้าเราแตกตอนนอน เราจะแตกได้อีกรอบไหม
