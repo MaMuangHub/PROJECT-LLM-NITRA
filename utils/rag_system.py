@@ -32,7 +32,7 @@ CrossEncoder = None
 
 def _lazy_imports():
     """Lazy import of heavy dependencies."""
-    global faiss, SentenceTransformer
+    global faiss, SentenceTransformer,CrossEncoder
     if faiss is None:
         # Additional environment setup to prevent conflicts
         os.environ["OMP_NUM_THREADS"] = "1"
@@ -44,8 +44,12 @@ def _lazy_imports():
         from sentence_transformers import SentenceTransformer as _ST  # type: ignore
         SentenceTransformer = _ST
     if CrossEncoder is None:
-        from sentence_transformers import CrossEncoder as _CE
-        CrossEncoder = _CE
+        try:
+            from sentence_transformers import CrossEncoder as _CE
+            CrossEncoder = _CE
+        except ImportError:
+            print("Warning: CrossEncoder not available. Re-ranking will be disabled.")
+            CrossEncoder = None
 
 
 class SimpleRAGSystem:
@@ -94,7 +98,7 @@ class SimpleRAGSystem:
                 # Initialize FAISS index (L2 distance)
                 self.index = faiss.IndexFlatL2(self.embedding_dimension)
 
-        # Load re-ranker if enabled
+        #Load re-ranker if enabled
         if self.use_reranker and self.reranker is None:
             _lazy_imports()
             print(f"Loading re-ranker model: {self.reranker_model}")
@@ -104,48 +108,72 @@ class SimpleRAGSystem:
     def add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None):
         """
         Add a text document to the RAG system.
-
-        Args:
-            text: The document text
-            doc_id: Unique identifier for the document
-            metadata: Optional metadata dictionary
         """
+        print(f"🔍 Starting add_text_document for: {doc_id}")
+    
         try:
-            # Ensure model is loaded
+        # Step 1: Ensure model is loaded
+            print("📦 Loading model...")
             self._ensure_model_loaded()
-
-            # Split text into chunks
+            print(f"✅ Model loaded: {self.model is not None}")
+            print(f"✅ Index created: {self.index is not None}")
+        
+        # Step 2: Split text into chunks
+            print("✂️ Chunking text...")
             chunks = self._chunk_text(text)
-
+            print(f"✅ Created {len(chunks)} chunks")
+        
+        # Step 3: Process each chunk
+            added_chunks = 0
             for i, chunk in enumerate(chunks):
-                if len(chunk.strip()) < 10:  # Skip very short chunks
+                if len(chunk.strip()) < 10:
+                    print(f"⏭️ Skipping chunk {i} (too short)")
                     continue
-
-                # Create embeddings for the chunk
-                embedding = self.model.encode([chunk])
+            
+                try:
+                # Create embeddings
+                    print(f"🔢 Creating embedding for chunk {i}...")
+                    embedding = self.model.encode([chunk])
+                
                 # Normalize for cosine similarity
-                faiss.normalize_L2(embedding)
-
+                    faiss.normalize_L2(embedding)
+                
                 # Add to index
-                self.index.add(embedding.astype('float32'))
-
-                # Store the chunk and metadata
-                chunk_metadata = metadata.copy() if metadata else {}
-                chunk_metadata.update({
-                    "doc_id": doc_id,
-                    "chunk_id": f"{doc_id}_chunk_{i}",
-                    "chunk_index": i
-                })
-
-                self.documents.append(chunk)
-                self.metadata.append(chunk_metadata)
-
-            # Save updated data
+                    self.index.add(embedding.astype('float32'))
+                
+                # Store metadata
+                    chunk_metadata = metadata.copy() if metadata else {}
+                    chunk_metadata.update({
+                        "doc_id": doc_id,
+                        "chunk_id": f"{doc_id}_chunk_{i}",
+                        "chunk_index": i
+                    })
+                
+                    self.documents.append(chunk)
+                    self.metadata.append(chunk_metadata)
+                    added_chunks += 1
+                    print(f"✅ Added chunk {i}")
+                
+                except Exception as chunk_error:
+                    print(f"❌ Error processing chunk {i}: {str(chunk_error)}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # Step 4: Save index
+            print("💾 Saving index...")
             self.save_index()
-            return f"Added document '{doc_id}' with {len(chunks)} chunks"
-
+            print("✅ Index saved")
+        
+            result = f"✅ Added document '{doc_id}' with {added_chunks}/{len(chunks)} chunks"
+            print(result)
+            return result
+        
         except Exception as e:
-            return f"Error adding document: {str(e)}"
+            error_msg = f"❌ Error adding document '{doc_id}': {str(e)}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            return error_msg
 
     def add_pdf_document(self, pdf_path: str, doc_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None):
         """
@@ -179,7 +207,6 @@ class SimpleRAGSystem:
                 "source_path": pdf_path,
                 "num_pages": len(pdf_reader.pages)
             })
-
             return self.add_text_document(text, doc_id, pdf_metadata)
 
         except Exception as e:
@@ -396,7 +423,7 @@ class SimpleRAGSystem:
         # Add to index
         self.index.add(embeddings.astype('float32'))  # type: ignore
 
-    def _chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
+    def _chunk_text(self, text: str, chunk_size: int = 350, overlap: int = 35) -> List[str]:
         """
         Split text into overlapping chunks.
 
@@ -425,7 +452,7 @@ class SimpleRAGSystem:
                         end = i + 1
                         break
 
-            while text[end] != ' ':
+            while end < len(text) and text[end] != ' ':
                 end += 1
 
             chunk = text[start:end].strip()
@@ -434,7 +461,7 @@ class SimpleRAGSystem:
 
             start = end - overlap
 
-            while text[start] != ' ':
+            while start >= 0 and start < len(text) and text[start] != ' ':
                 start -= 1
 
             # Prevent infinite loops
@@ -519,7 +546,7 @@ class SimpleRAGSystem:
         }
 
 
-def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./rag_data"):
+def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
     """
     Load sample documents into the RAG system for testing.
     """
@@ -585,7 +612,7 @@ def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = 
 if __name__ == "__main__":
     # Create RAG system
     rag = SimpleRAGSystem()
-
+    load_sample_documents(rag,'./data')
     # Add some sample text
     #add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None)
     #add_pdf_document(self, pdf_path: str, doc_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None)
@@ -596,9 +623,9 @@ if __name__ == "__main__":
     # )
 
     # Search for relevant content
-    results = rag.search("sleep", n_results=3)
-    for result in results:
-        print(f"Score: {result['score']:.3f}")
-        print(f"Content: {result['content'][:100]}...")
-        print(f"Metadata: {result['metadata']}")
-        print()
+    # results = rag.search("sleep", n_results=3)
+    # for result in results:
+    #     print(f"Score: {result['score']:.3f}")
+    #     print(f"Content: {result['content'][:100]}...")
+    #     print(f"Metadata: {result['metadata']}")
+    #     print()

@@ -14,7 +14,7 @@ from PIL import Image
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
  
-from utils import LLMClient, SimpleRAGSystem, get_available_models, load_sample_documents, load_sample_documents_for_demo
+from utils.rag_system import load_sample_documents, load_sample_documents_for_demo,SimpleRAGSystem
 from utils.llm_client import LLMClient, get_available_models
 from utils.search_tools import WebSearchTool, format_search_results
 
