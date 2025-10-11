@@ -610,7 +610,7 @@ def main():
                         enhanced_prompt_rag = f"""
                         You are a highly specialized sleep expert. Answer the user's question using ONLY the information in [Context] below.
 
-                        IMPORTANT: If the [Context] does not contain sufficient information to fully answer the question, you MUST respond with EXACTLY this phrase: "INSUFFICIENT_CONTEXT"
+                        IMPORTANT: If the [Context] does not contain information to answer the question, you MUST respond with EXACTLY this phrase: "INSUFFICIENT_CONTEXT"
                 
                         [Context]
                         {context}
