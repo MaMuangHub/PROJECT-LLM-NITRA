@@ -184,23 +184,17 @@ def main():
     # Apply custom CSS
     apply_custom_css()
 
-    # Language toggle button in top-right corner 
-    col1, col2 = st.columns([6, 1])
-    with col2:
-        # Check if the button label is from the correct language file
-        lang_button_label = texts.get("LANG_BUTTON", "Toggle Language")
-        if st.button(lang_button_label, key="lang_toggle"):
-            st.session_state.language = "en" if st.session_state.language == "th" else "th"
-            st.rerun()
-
     # Create header
     create_header(texts)
 
     # Sidebar configuration
     with st.sidebar:
-        st.markdown(f"### {texts['SIDEBAR_CONFIG_HEADER']}")
 
-        # Model selection
+        lang_button_label = texts.get("LANG_BUTTON", "Toggle Language")
+        if st.button(lang_button_label, key="lang_toggle"):
+            st.session_state.language = "th" if st.session_state.language == "en" else "en"
+            st.rerun()
+
         available_models = get_available_models()
         selected_model = st.selectbox(
             texts["MODEL_SELECT_LABEL"],
@@ -209,86 +203,60 @@ def main():
             help=texts["MODEL_SELECT_HELP"]
         )
 
-        # Temperature slider
-        temperature = st.slider(
-            texts["TEMP_SLIDER_LABEL"],
-            min_value=0.0,
-            max_value=2.0,
-            value=0.7,
-            step=0.1,
-            help=texts["TEMP_SLIDER_HELP"]
-        )
+        temperature = 0.1
+        max_tokens = 2000
+        context_max_tokens = 1500
+        n_results = 5
+        enable_web_search = True
+        web_search_results = 5
 
-        # Max tokens
-        max_tokens = st.slider(
-            texts["MAX_TOKENS_LABEL"],
-            min_value=50,
-            max_value=4000,
-            value=2000,
-            step=50,
-            help=texts["MAX_TOKENS_HELP"]
-        )
+        with st.expander(f"### {texts['SIDEBAR_CONFIG_HEADER']}", expanded=False):
+             st.caption(texts["TEMP_SLIDER_LABEL"] + f": `{temperature}`", help=texts["TEMP_SLIDER_HELP"])
+             st.caption(texts["MAX_TOKENS_LABEL"] + f": `{max_tokens}`", help=texts["MAX_TOKENS_HELP"])
+             st.caption(texts["CONTEXT_MAX_TOKENS_LABEL"] + f": `{context_max_tokens}`", help=texts["CONTEXT_MAX_TOKENS_HELP"])
+             st.caption(texts["SEARCH_RESULTS_LABEL"] + f": `{n_results}`", help=texts["SEARCH_RESULTS_HELP"])
+             st.caption(texts["WEB_SEARCH_RESULTS_LABEL"] + f": `{web_search_results}`", help=texts["WEB_SEARCH_RESULTS_HELP"])
 
-        # RAG settings
-        st.markdown(f"### {texts['RAG_SETTINGS_HEADER']}")
-        context_max_tokens = st.slider(
-            texts["CONTEXT_MAX_TOKENS_LABEL"],
-            min_value=500,
-            max_value=3000,
-            value=1500,
-            step=100,
-            help=texts["CONTEXT_MAX_TOKENS_HELP"]
-        )
-
-        n_results = st.slider(
-            texts["SEARCH_RESULTS_LABEL"],
-            min_value=1,
-            max_value=10,
-            value=5,
-            help=texts["SEARCH_RESULTS_HELP"]
-        )
-
-        # Web search settings
-        st.markdown(f"### {texts['WEB_SETTINGS_HEADER']}")
-        enable_web_search = st.checkbox(
-            texts["WEB_ENABLE_LABEL"],
-            value=True,
-            help=texts["WEB_ENABLE_HELP"]
-        )
-
-        web_search_results = st.slider(
-            texts["WEB_SEARCH_RESULTS_LABEL"],
-            min_value=1,
-            max_value=10,
-            value=5,
-            help=texts["WEB_SEARCH_RESULTS_HELP"]
-        )
-
-        st.divider()
-
-        # Initialize systems
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if st.button(texts["INIT_MODEL_BUTTON"]) or st.session_state.llm_client is None:
-                with st.spinner(texts["INIT_MODEL_SPINNER"]): 
-                    st.session_state.llm_client = LLMClient(
+        st.session_state.llm_client = LLMClient(
                         model=selected_model,
                         temperature=temperature,
                         max_tokens=max_tokens
                     )
-                st.success(texts["INIT_MODEL_SUCCESS"])
+        st.success(texts["INIT_MODEL_SUCCESS"])
+        
+        st.session_state.rag_system = SimpleRAGSystem()
+        if not st.session_state.rag_initialized:
+            load_sample_documents(st.session_state.rag_system, "./data")
+            st.session_state.rag_initialized = True
+        st.success(texts["INIT_RAG_SUCCESS"])
 
-        with col2:
-            if st.button(texts["INIT_RAG_BUTTON"]) or st.session_state.rag_system is None:
-                with st.spinner(texts["INIT_RAG_SPINNER"]): 
-                    st.session_state.rag_system = SimpleRAGSystem()
-                    if not st.session_state.rag_initialized:
-                        load_sample_documents(st.session_state.rag_system, "./data")
-                        st.session_state.rag_initialized = True
-                st.success(texts["INIT_RAG_SUCCESS"])
+         # Search API status
+        serper_key = os.getenv("SERPER_API_KEY")
+        st.success(f"**Serper** {'✅' if serper_key else '❌'}")
 
-        st.divider()
+        # Initialize systems
+        # col1, col2 = st.columns(2)
+
+        # with col1:
+            # if st.button(texts["INIT_MODEL_BUTTON"]) or st.session_state.llm_client is None:
+                # with st.spinner(texts["INIT_MODEL_SPINNER"]): 
+                    # st.session_state.llm_client = LLMClient(
+                        # model=selected_model,
+                        # temperature=temperature,
+                        # max_tokens=max_tokens
+                    # )
+                # st.success(texts["INIT_MODEL_SUCCESS"])
+
+        # with col2:
+            # if st.button(texts["INIT_RAG_BUTTON"]) or st.session_state.rag_system is None:
+                # with st.spinner(texts["INIT_RAG_SPINNER"]): 
+                    # st.session_state.rag_system = SimpleRAGSystem()
+                    # if not st.session_state.rag_initialized:
+                        # load_sample_documents(st.session_state.rag_system, "./data")
+                        # st.session_state.rag_initialized = True
+                # st.success(texts["INIT_RAG_SUCCESS"])
+
+        # st.divider()
 
         # Document management
         st.markdown(f"### {texts['DOC_MANAGEMENT_HEADER']}")
@@ -354,14 +322,10 @@ def main():
             st.success(result)
             st.rerun()
 
-        st.divider()
-
         # Quick actions
         if st.button(texts["CLEAR_CHAT_BUTTON"]):
             st.session_state.messages = []
             st.rerun()
-
-        st.divider()
 
         # Stats
         if st.session_state.rag_system:
@@ -369,12 +333,6 @@ def main():
             st.markdown(f"### {texts['STATS_HEADER']}")
             st.metric(texts["STATS_DOCUMENTS"], stats.get("total_documents", 0))
             st.metric(texts["STATS_CHUNKS"], stats.get("total_chunks", 0))
-
-        # Search API status
-        st.divider()
-        st.markdown(f"### {texts['SEARCH_API_HEADER']}")
-        serper_key = os.getenv("SERPER_API_KEY")
-        st.write(f"**Serper** {'✅' if serper_key else '❌'}")
         
         st.divider()
         st.markdown(f"### {texts['ABOUT_HEADER']}")
@@ -503,8 +461,8 @@ def main():
 
                         # --- Check for INSUFFICIENT_CONTEXT and fallback to Web Search (NEW) ---
                         if "INSUFFICIENT_CONTEXT" in initial_response and enable_web_search:
-                            st.warning(texts["RAG_NOT_ENOUGH_WARNING"])
-                            st.info(texts["SEARCHING_WEB_INFO"])
+                            # st.warning(texts["RAG_NOT_ENOUGH_WARNING"])
+                            # st.info(texts["SEARCHING_WEB_INFO"])
 
                             # Execute Search
                             enhanced_prompt_search = f"{prompt} sleep research evidence-based"
@@ -512,7 +470,7 @@ def main():
                             search_context = search_results
                             search_used = True
 
-                            st.success(f"✅ {texts['WEB_SEARCH_SUCCESS']} {web_search_results} {texts['WEB_SOURCES_LABEL']}.")
+                            # st.success(f"✅ {texts['WEB_SEARCH_SUCCESS']} {web_search_results} {texts['WEB_SOURCES_LABEL']}.")
                             
                             # --- Web Search Prompt (เวอร์ชันเข้มข้นขึ้น) ---
                             detected_lang = "English" if any(c.isascii() and c.isalpha() for c in prompt[:50]) else "Thai"
