@@ -4,25 +4,25 @@
 
 # --- Thai Language Dictionary ---
 THAI_TEXTS = {
-    "APP_TITLE": "ผู้ช่วยแชท RAG",
+    "APP_TITLE": "NITRA",
     "HEADER_TITLE": "NITRA",
     "HEADER_SUBTITLE": "🌙 NITRA — ผู้ช่วยดูแลการนอนหลับของคุณในทุกค่ำคืน",
-    "SIDEBAR_CONFIG_HEADER": "⚙️ การตั้งค่า",
-    "MODEL_SELECT_LABEL": "🤖 เลือกรุ่นภาษา",
-    "MODEL_SELECT_HELP": "เลือกรุ่นภาษาที่จะใช้",
-    "TEMP_SLIDER_LABEL": "🌡️ อุณหภูมิ",
+    "SIDEBAR_CONFIG_HEADER": "⚙️ ตั้งค่า",
+    "MODEL_SELECT_LABEL": "🤖 เลือกโมเดล",
+    "MODEL_SELECT_HELP": "เลือกโมเดลที่จะใช้",
+    "TEMP_SLIDER_LABEL": "🌡️ ระดับความคิดสร้างสรรค์",
     "TEMP_SLIDER_HELP": "ควบคุมความสุ่มของการตอบกลับ",
     "MAX_TOKENS_LABEL": "📏 โทเคนสูงสุด",
     "MAX_TOKENS_HELP": "ความยาวสูงสุดของการตอบกลับ",
-    "RAG_SETTINGS_HEADER": "📚 การตั้งค่า RAG",
+    "RAG_SETTINGS_HEADER": "📚 ตั้งค่า RAG",
     "CONTEXT_MAX_TOKENS_LABEL": "โทเคนบริบทสูงสุด",
-    "CONTEXT_MAX_TOKENS_HELP": "โทเคนสูงสุดสำหรับบริบทที่จะส่งไปให้ LLM",
+    "CONTEXT_MAX_TOKENS_HELP": "โทเคนบริบทสูงสุดที่จะส่งไปให้ LLM",
     "SEARCH_RESULTS_LABEL": "จำนวนผลการค้นหา",
     "SEARCH_RESULTS_HELP": "จำนวนส่วนข้อมูล (Chunk) ที่จะดึงขึ้นมา",
     "INIT_MODEL_BUTTON": "🤖 เริ่มต้น Model",
     "INIT_RAG_BUTTON": "📚 เริ่มต้น RAG",
-    "INIT_MODEL_SPINNER": "กำลังเริ่มต้น Model...",
-    "INIT_RAG_SPINNER": "กำลังเริ่มต้นระบบ RAG...",
+    "INIT_MODEL_SPINNER": "โหลด Model...",
+    "INIT_RAG_SPINNER": "โหลด RAG...",
     "INIT_MODEL_SUCCESS": "Model พร้อมใช้งาน!",
     "INIT_RAG_SUCCESS": "ระบบ RAG พร้อมใช้งาน!",
     "DOC_MANAGEMENT_HEADER": "📁 จัดการเอกสาร",
@@ -34,10 +34,10 @@ THAI_TEXTS = {
     "ADD_DOC_BUTTON": "เพิ่มเอกสารข้อความ",
     "ADD_DOC_SUCCESS": "เพิ่มเอกสาร: ",
     "LOAD_SAMPLE_BUTTON": "📖 โหลดเอกสารตัวอย่าง",
-    "CLEAR_CHAT_BUTTON": "🗑️ ล้างแชท",
+    "CLEAR_CHAT_BUTTON": "🗑️ เคลียร์แชท",
     "STATS_HEADER": "📊 สถิติ",
     "STATS_DOCUMENTS": "เอกสารทั้งหมด",
-    "STATS_CHUNKS": "ส่วนข้อมูล (Chunks)",
+    "STATS_CHUNKS": "ข้อมูล (Chunks)",
     "ABOUT_HEADER": "📚 เกี่ยวกับ",
     "ABOUT_FEATURES_HEADER": "**คุณสมบัติ (Features):**",
     "ABOUT_FEATURES": """
@@ -83,7 +83,7 @@ THAI_TEXTS = {
     "PROCESSING_FILE": "กำลังประมวลผล",
     "FILE_ADD_SUCCESS": "เพิ่มไฟล์ข้อความสำเร็จ:",
     "FILE_ERROR": "เกิดข้อผิดพลาดในการประมวลผล",
-    "LANG_BUTTON": "🇬🇧 English",
+    "LANG_BUTTON": "🇹🇭 ไทย",
 
 
     "WEB_SETTINGS_HEADER": "🔍 การตั้งค่า Web Search",
@@ -111,7 +111,7 @@ THAI_TEXTS = {
 
 # --- English Language Dictionary ---
 ENGLISH_TEXTS = {
-    "APP_TITLE": "RAG Chat Assistant",
+    "APP_TITLE": "NITRA",
     "HEADER_TITLE": "NITRA",
     "HEADER_SUBTITLE": "🌙 NITRA — Your Sleep Companion for Every Night",
     "SIDEBAR_CONFIG_HEADER": "⚙️ Configuration",
@@ -190,7 +190,7 @@ ENGLISH_TEXTS = {
     "PROCESSING_FILE": "Processing",
     "FILE_ADD_SUCCESS": "Text file added successfully:",
     "FILE_ERROR": "Error processing",
-    "LANG_BUTTON": "🇹🇭 ไทย",
+    "LANG_BUTTON": "🇬🇧 English",
 
     "WEB_SETTINGS_HEADER": "🔍 Web Search Settings",
     "WEB_ENABLE_LABEL": "Enable Web Search Fallback",
