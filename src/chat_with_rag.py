@@ -1,8 +1,3 @@
-"""
-Chat Application with RAG (Retrieval Augmented Generation)
-Beautiful CSS Styling + Full Features (with Thai/English language toggle and Web Search Fallback)
-"""
-
 import streamlit as st
 import sys
 import os
@@ -379,13 +374,10 @@ def main():
         st.divider()
         st.markdown(f"### {texts['SEARCH_API_HEADER']}")
         serper_key = os.getenv("SERPER_API_KEY")
-        tavily_key = os.getenv("TAVILY_API_KEY")
         st.write(f"**Serper** {'✅' if serper_key else '❌'}")
-        st.write(f"**Tavily** {'✅' if tavily_key else '❌'}")
         
         st.divider()
         st.markdown(f"### {texts['ABOUT_HEADER']}")
-        st.markdown(texts["ABOUT_FEATURES_HEADER"])
         st.markdown(texts["ABOUT_FEATURES"])
         st.markdown(texts["ABOUT_STUDENTS_HEADER"])
         st.markdown(texts["ABOUT_STUDENTS"])
@@ -470,17 +462,34 @@ def main():
                         search_used = False
                         search_context = ""
 
-                        # --- First, try to answer with RAG (RAG-Only Prompt) ---
-                        enhanced_prompt_rag = f"""
-                        You are a highly specialized sleep expert. Answer the user's question using ONLY the information in [Context] below.
+                        # --- RAG-Only Prompt (ปรับให้ดึงข้อมูลครอบคลุมและละเอียดขึ้น) ---
+                        detected_lang = "English" if any(c.isascii() and c.isalpha() for c in prompt[:50]) else "Thai"
 
-                        IMPORTANT: If the [Context] does not contain sufficient information to fully answer the question, you MUST respond with EXACTLY this phrase: "INSUFFICIENT_CONTEXT"
-                        
-                        [Context]
+                        enhanced_prompt_rag = f"""You are a compassionate sleep expert. Answer using ONLY the information provided in the Context below.
+
+                        🚨 LANGUAGE REQUIREMENT: The user asked in {detected_lang}. You MUST write your response in {detected_lang} only.
+
+                        📚 INFORMATION SYNTHESIS RULES:
+                        1. **Use ALL relevant information** from the context - don't just pick one piece
+                        2. **Combine information** from multiple documents/sections when available
+                        3. **Be comprehensive** - include different perspectives, age groups, conditions, etc.
+                        4. **Cite variations** - if sources mention different numbers/recommendations, include them all with context
+                        5. **Add nuance** - explain WHY recommendations vary (age, health conditions, lifestyle, etc.)
+
+                        ⚠️ CRITICAL: If after reviewing ALL the context, there is still insufficient information to give a detailed answer, respond with exactly: "INSUFFICIENT_CONTEXT"
+
+                        📋 ANSWER STRUCTURE (when sufficient context exists):
+                        1. **Direct answer** - Start with the main recommendation
+                        2. **Detailed breakdown** - Explain variations by age group, conditions, research findings
+                        3. **Context & reasoning** - Why these numbers? What factors affect them?
+                        4. **Practical implications** - What does this mean for different people?
+
+                        Context (review ALL of this carefully):
                         {context}
 
-                        User Question: {prompt}
-                        """
+                        User's Question: {prompt}
+
+                        Synthesize a comprehensive answer from the context above, written entirely in {detected_lang}."""
 
                         # Prepare messages for LLM
                         messages = []
@@ -498,31 +507,35 @@ def main():
                             st.info(texts["SEARCHING_WEB_INFO"])
 
                             # Execute Search
-                            # The prompt for the search engine itself should still be clear
-                            enhanced_prompt_search = prompt + " ONLY SEARCH FROM WEBSITE THAT HAVE RESEARCH-BACKED RESOURCES ABOUT SLEEPING "
+                            enhanced_prompt_search = f"{prompt} sleep research evidence-based"
                             search_results = execute_search(enhanced_prompt_search, web_search_results)
                             search_context = search_results
                             search_used = True
 
                             st.success(f"✅ {texts['WEB_SEARCH_SUCCESS']} {web_search_results} {texts['WEB_SOURCES_LABEL']}.")
                             
-                            # Web Search Prompt (with full core instructions)
-                            enhanced_prompt = f"""
-                            You are a highly specialized sleep expert with an exceptional ability to simplify complex topics.
+                            # --- Web Search Prompt (เวอร์ชันเข้มข้นขึ้น) ---
+                            detected_lang = "English" if any(c.isascii() and c.isalpha() for c in prompt[:50]) else "Thai"
 
-                            Core Instructions:
-                            1. Level of Detail & Simplicity: Your answers must be detailed and comprehensive, treating the user as a complete novice. Use simple, clear language and fully explain all core concepts.
-                            2. **Language Match: Answer in the same language used by the user (Thai or English). Ensure natural and fluent language.**
-                            3. Content Scope: Focus exclusively on sleep-related topics.
-                            4. Web Search Context: Below is current information from the web. Use this to answer comprehensively.
+                            enhanced_prompt = f"""You are a compassionate sleep expert.
 
-                            [Web Search Results]
+                            🚨 ABSOLUTE REQUIREMENT - READ THIS FIRST:
+                            The user asked in {detected_lang}. You MUST write your ENTIRE response in {detected_lang}.
+                            Do NOT translate. Do NOT switch languages. Use ONLY {detected_lang} from start to finish.
+
+                            Core Guidelines:
+                            **Provide actionable advice**:
+                            **Be comprehensive yet clear**:
+                            - Explain WHY (causes/mechanisms)
+                            - Explain HOW (practical steps)
+
+                            Web Search Results:
                             {search_context}
 
-                            User Question: {prompt}
+                            User's Question: {prompt}
 
-                            Please provide a comprehensive answer based on the web search results above. Synthesize information from multiple sources and present it clearly.
-                            """
+                            Write your complete response in {detected_lang} only."""
+
                             
                             # Get new response with web search context
                             message_web = []

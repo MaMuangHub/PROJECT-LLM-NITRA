@@ -194,6 +194,12 @@ class SimpleRAGSystem:
                 pdf_reader = PyPDF2.PdfReader(file)
                 text = ""
                 for page in pdf_reader.pages:
+                    if 'abstract' in page.extract_text().lower() or 'บทคัดย่อ' in page.extract_text() or 'กิตติกรรมประกาศ' in page.extract_text() or 'สารบัญ' in page.extract_text():
+                        continue
+
+                    if 'reference' in page.extract_text().lower() or 'เอกสารอ้างอิง' in page.extract_text():
+                        break
+                        
                     text += page.extract_text() + "\n"
 
             # Use filename as doc_id if not provided
