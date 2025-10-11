@@ -175,16 +175,6 @@ def main():
     texts = get_texts(st.session_state.language) 
     
     st.set_page_config(
-<<<<<<< HEAD
-        page_title="Nitra",
-        page_icon="🌙",
-        layout="wide"
-    )
-
-    st.title("🌙Nitra")
-    st.markdown(
-        "Which sleep challenges should Nitra help users with?")
-=======
         page_title=texts["APP_TITLE"],
         page_icon="🌙",
         layout="wide",
@@ -193,7 +183,6 @@ def main():
 
     # Apply custom CSS
     apply_custom_css()
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 
     # Language toggle button in top-right corner 
     col1, col2 = st.columns([6, 1])
