@@ -218,12 +218,8 @@ class SimpleRAGSystem:
 
         except Exception as e:
             return f"Error processing PDF: {str(e)}"
-<<<<<<< HEAD
-    def search(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
-=======
 
     def search(self, query: str, n_results: int = 5, use_reranker: Optional[bool] = None) -> List[Dict[str, Any]]:
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
         """
         Search for relevant documents using FAISS
 
@@ -256,15 +252,6 @@ class SimpleRAGSystem:
             scores, indices = self.index.search(
                 query_embedding.astype('float32'), initial_k)
 
-<<<<<<< HEAD
-            search_results = []
-            for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
-                search_results.append({
-                    "content": self.documents[idx],
-                    "metadata": self.metadata[idx],
-                    "score": float(score),
-                    "rank": i + 1
-=======
             # Search using FAISS
             candidates = []
             for score, idx in zip(scores[0], indices[0]):
@@ -274,7 +261,6 @@ class SimpleRAGSystem:
                         "metadata": self.metadata[idx],
                         "initial_score": float(score),
                         "index": int(idx)
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
                     })
 
             # Step 2: Re-rank if enabled
@@ -628,31 +614,6 @@ def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = 
     # Create sample documents
     sample_docs = [
         {
-<<<<<<< HEAD
-            "id": "sleeping",
-            "title": "Sleeping Guide",
-            "content": """
-            Sleep was long considered just a block of time when your brain and body shut down. Thanks to sleep research studies done over the
-            past several decades, it is now known that sleep has distinct stages that cycle throughout the night in predictable patterns. How well
-            rested you are and how well you function depend not just on your total sleep time but on how much sleep you get each night and the timing of your sleep stages.
-
-            Your brain and body functions stay active throughout sleep, and each stage of sleep is linked to a specific type of brain waves (distinctive
-            patterns of electrical activity in the brain). Sleep is divided into two basic types: rapid eye movement (REM) sleep and
-            non-REM sleep (with three different stages). (For more information, see “Types of Sleep” on page 5.) Typically,
-
-            sleep begins with non-REM sleep. In stage 1 non-REM sleep, you sleep lightly and can be awakened easily by noises or
-            other disturbances. During this first stage of sleep, your eyes move slowly, your muscles relax, and your heart and breathing rates begin to slow. You then enter
-            stage 2 non-REM sleep, which is defined by slower brain waves with occasional bursts of rapid waves. You spend about half the night in this stage.
-            When you progress into stage 3 nonREM sleep, your brain waves become even slower, and the brain produces extremely slow waves almost exclusively (called Delta waves). 
-            
-            Stage 3 is a very deep stage of sleep, during which it is very difficult to be awakened. Children who wet the bed or sleep walk tend to do
-            so during stage 3 of non-REM sleep. Deep sleep is considered the “restorative” stage of sleep that is necessary for feeling well rested
-            and energetic during the day. 
-            
-            
-            """
-        }
-=======
             "id": "insomnia",
             "title": "the disorder that make you hard to sleep",
             "content": """
@@ -667,7 +628,6 @@ def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = 
             """
         },
         
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
     ]
 
     for doc in sample_docs:
@@ -695,18 +655,9 @@ if __name__ == "__main__":
     # )
 
     # Search for relevant content
-<<<<<<< HEAD
-    results = rag.search("What is Python?", n_results=3)
-    for result in results:
-        print(f"Score: {result['score']:.3f}")
-        print(f"Content: {result['content'][:100]}...")
-        print(f"Metadata: {result['metadata']}")
-        print()
-=======
     # results = rag.search("sleep", n_results=3)
     # for result in results:
     #     print(f"Score: {result['score']:.3f}")
     #     print(f"Content: {result['content'][:100]}...")
     #     print(f"Metadata: {result['metadata']}")
     #     print()
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
