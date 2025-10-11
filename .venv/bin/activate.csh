@@ -1,5 +1,9 @@
 # This file must be used with "source bin/activate.csh" *from csh*.
 # You cannot run it directly.
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 # Created by Davide Di Blasi <davidedb@gmail.com>.
 # Ported to Python 3.3 venv by Andrew Svetlov <andrew.svetlov@gmail.com>
 
@@ -8,7 +12,11 @@ alias deactivate 'test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PA
 # Unset irrelevant variables.
 deactivate nondestructive
 
+<<<<<<< HEAD
 setenv VIRTUAL_ENV /home/mamon/PROLLM/.venv
+=======
+setenv VIRTUAL_ENV /home/mr-dome/Desktop/PROJECT-LLM/.venv
+>>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 
 set _OLD_VIRTUAL_PATH="$PATH"
 setenv PATH "$VIRTUAL_ENV/"bin":$PATH"

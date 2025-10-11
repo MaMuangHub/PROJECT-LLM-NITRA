@@ -14,7 +14,7 @@ class LLMClient:
     """Wrapper class for LiteLLM operations"""
 
     def __init__(self, model: Optional[str] = None, temperature: float = 0.7, max_tokens: int = 1000):
-        self.model = model or os.getenv("DEFAULT_MODEL", "gpt-3.5-turbo")
+        self.model = model or os.getenv("DEFAULT_MODEL", "gpt-4-turbo-preview")
         self.temperature = temperature
         self.max_tokens = max_tokens
 
@@ -86,9 +86,9 @@ class LLMClient:
 def get_available_models() -> List[str]:
     """Get list of available models"""
     return [
-        "gpt-3.5-turbo",
-        "gpt-4",
         "gpt-4-turbo-preview",
+        "gpt-4",
+        "gpt-3.5-turbo",
         #"claude-3-sonnet-20240229",
         #"claude-3-haiku-20240307",
         #"gemini-pro",
