@@ -126,7 +126,8 @@ def init_session_state():
     if "llm_client" not in st.session_state:
         st.session_state.llm_client = None
     if "rag_system" not in st.session_state:
-        st.session_state.rag_system = None
+        st.session_state.rag_system = SimpleRAGSystem()
+        st.session_state.rag_system._ensure_model_loaded()
     if "rag_initialized" not in st.session_state:
         st.session_state.rag_initialized = False
     if "search_tool" not in st.session_state:
@@ -203,9 +204,9 @@ def main():
             help=texts["MODEL_SELECT_HELP"]
         )
 
-        temperature = 0.1
+        temperature = 0.2
         max_tokens = 2000
-        context_max_tokens = 1500
+        context_max_tokens = 800
         n_results = 5
         enable_web_search = True
         web_search_results = 5
@@ -215,24 +216,18 @@ def main():
              st.caption(texts["MAX_TOKENS_LABEL"] + f": `{max_tokens}`", help=texts["MAX_TOKENS_HELP"])
              st.caption(texts["CONTEXT_MAX_TOKENS_LABEL"] + f": `{context_max_tokens}`", help=texts["CONTEXT_MAX_TOKENS_HELP"])
              st.caption(texts["SEARCH_RESULTS_LABEL"] + f": `{n_results}`", help=texts["SEARCH_RESULTS_HELP"])
-             st.caption(texts["WEB_SEARCH_RESULTS_LABEL"] + f": `{web_search_results}`", help=texts["WEB_SEARCH_RESULTS_HELP"])
+             # st.caption(texts["WEB_SEARCH_RESULTS_LABEL"] + f": `{web_search_results}`", help=texts["WEB_SEARCH_RESULTS_HELP"])
+             web_search_results = st.slider(
+                texts["WEB_SEARCH_RESULTS_LABEL"],
+                min_value=1,
+                max_value=10,
+                value=5,
+                help=texts["WEB_SEARCH_RESULTS_HELP"]
+        )
 
-        st.session_state.llm_client = LLMClient(
-                        model=selected_model,
-                        temperature=temperature,
-                        max_tokens=max_tokens
-                    )
-        st.success(texts["INIT_MODEL_SUCCESS"])
-        
-        st.session_state.rag_system = SimpleRAGSystem()
-        if not st.session_state.rag_initialized:
-            load_sample_documents(st.session_state.rag_system, "./data")
-            st.session_state.rag_initialized = True
-        st.success(texts["INIT_RAG_SUCCESS"])
-
-         # Search API status
+        # Search API status
         serper_key = os.getenv("SERPER_API_KEY")
-        st.success(f"**Serper** {'✅' if serper_key else '❌'}")
+        # st.success(f"**Serper** {'✅' if serper_key else '❌'}")
 
         # Initialize systems
         # col1, col2 = st.columns(2)
@@ -333,6 +328,19 @@ def main():
             st.markdown(f"### {texts['STATS_HEADER']}")
             st.metric(texts["STATS_DOCUMENTS"], stats.get("total_documents", 0))
             st.metric(texts["STATS_CHUNKS"], stats.get("total_chunks", 0))
+
+        st.session_state.llm_client = LLMClient(
+                        model=selected_model,
+                        temperature=temperature,
+                        max_tokens=max_tokens
+                    )
+        st.success(texts["INIT_MODEL_SUCCESS"])
+        
+        st.session_state.rag_system = SimpleRAGSystem()
+        if not st.session_state.rag_initialized:
+            load_sample_documents(st.session_state.rag_system, "./data")
+            st.session_state.rag_initialized = True
+        st.success(texts["INIT_RAG_SUCCESS"])
         
         st.divider()
         st.markdown(f"### {texts['ABOUT_HEADER']}")
@@ -423,31 +431,24 @@ def main():
                         # --- RAG-Only Prompt (ปรับให้ดึงข้อมูลครอบคลุมและละเอียดขึ้น) ---
                         detected_lang = "English" if any(c.isascii() and c.isalpha() for c in prompt[:50]) else "Thai"
 
-                        enhanced_prompt_rag = f"""You are a compassionate sleep expert. Answer using ONLY the information provided in the Context below.
+                        enhanced_prompt_rag = f"""You are a sleep expert. Answer using ONLY the information provided in the Context below. If insufficient, say "INSUFFICIENT_CONTEXT".
 
                         🚨 LANGUAGE REQUIREMENT: The user asked in {detected_lang}. You MUST write your response in {detected_lang} only.
 
-                        📚 INFORMATION SYNTHESIS RULES:
+                        📚 Core Guidelines:
                         1. **Use ALL relevant information** from the context - don't just pick one piece
                         2. **Combine information** from multiple documents/sections when available
                         3. **Be comprehensive** - include different perspectives, age groups, conditions, etc.
                         4. **Cite variations** - if sources mention different numbers/recommendations, include them all with context
-                        5. **Add nuance** - explain WHY recommendations vary (age, health conditions, lifestyle, etc.)
-
-                        ⚠️ CRITICAL: If after reviewing ALL the context, there is still insufficient information to give a detailed answer, respond with exactly: "INSUFFICIENT_CONTEXT"
-
-                        📋 ANSWER STRUCTURE (when sufficient context exists):
-                        1. **Direct answer** - Start with the main recommendation
-                        2. **Detailed breakdown** - Explain variations by age group, conditions, research findings
-                        3. **Context & reasoning** - Why these numbers? What factors affect them?
-                        4. **Practical implications** - What does this mean for different people?
+                        5. **Add nuance** - explain WHY recommendations vary (age, health conditions, lifestyle, etc.
 
                         Context (review ALL of this carefully):
                         {context}
 
                         User's Question: {prompt}
 
-                        Synthesize a comprehensive answer from the context above, written entirely in {detected_lang}."""
+                        Use ONLY this context. If insufficient, say "INSUFFICIENT_CONTEXT".
+                        """
 
                         # Prepare messages for LLM
                         messages = []
@@ -459,13 +460,24 @@ def main():
                         # Get initial response from LLM
                         initial_response = st.session_state.llm_client.chat(messages)
 
+                        response_placeholder = st.empty()
+                        full_response = ""
+
+                        if not "INSUFFICIENT_CONTEXT" in initial_response:
+
+                            for chunk in initial_response:
+                                full_response += chunk
+                                response_placeholder.markdown(full_response + "▌")
+
+                        response = full_response
+
                         # --- Check for INSUFFICIENT_CONTEXT and fallback to Web Search (NEW) ---
                         if "INSUFFICIENT_CONTEXT" in initial_response and enable_web_search:
                             # st.warning(texts["RAG_NOT_ENOUGH_WARNING"])
                             # st.info(texts["SEARCHING_WEB_INFO"])
 
                             # Execute Search
-                            enhanced_prompt_search = f"{prompt} sleep research evidence-based"
+                            enhanced_prompt_search = f"{prompt} sleep research evidence-based -site:facebook.com -site:tiktok.com -site:twitter.com -site:instagram.com -site:youtube.com -site:pantip.com -site:reddit.com"
                             search_results = execute_search(enhanced_prompt_search, web_search_results)
                             search_context = search_results
                             search_used = True
@@ -475,11 +487,9 @@ def main():
                             # --- Web Search Prompt (เวอร์ชันเข้มข้นขึ้น) ---
                             detected_lang = "English" if any(c.isascii() and c.isalpha() for c in prompt[:50]) else "Thai"
 
-                            enhanced_prompt = f"""You are a compassionate sleep expert.
+                            enhanced_prompt = f"""You are a sleep expert.
 
-                            🚨 ABSOLUTE REQUIREMENT - READ THIS FIRST:
-                            The user asked in {detected_lang}. You MUST write your ENTIRE response in {detected_lang}.
-                            Do NOT translate. Do NOT switch languages. Use ONLY {detected_lang} from start to finish.
+                            🚨 LANGUAGE REQUIREMENT: The user asked in {detected_lang}. You MUST write your response in {detected_lang} only.
 
                             Core Guidelines:
                             **Provide actionable advice**:
@@ -493,7 +503,6 @@ def main():
                             User's Question: {prompt}
 
                             Write your complete response in {detected_lang} only."""
-
                             
                             # Get new response with web search context
                             message_web = []
@@ -501,7 +510,15 @@ def main():
                                 message_web.append({"role": msg["role"], "content": msg["content"]})
                             message_web.append({"role": "user", "content": enhanced_prompt})
 
-                            response = st.session_state.llm_client.chat(message_web)
+                            response_placeholder = st.empty()
+                            full_response = ""
+
+                            for chunk in st.session_state.llm_client.stream_chat(message_web):
+                                full_response += chunk
+                                response_placeholder.markdown(full_response + "▌")
+
+                            response_placeholder.markdown(full_response)
+                            response = full_response
                             
                         elif "INSUFFICIENT_CONTEXT" in initial_response and not enable_web_search:
                             st.warning(texts["RAG_NOT_ENOUGH_WARNING"])
@@ -511,10 +528,9 @@ def main():
                         else:
                             # RAG is good, use the initial response
                             response = initial_response
-                            search_context = context # Use RAG context for display
-                            
-                        # Display response
-                        st.markdown(response)
+
+                            # Use RAG context for display
+                            search_context = context 
 
                         # Show retrieved context in expander
                         if search_used:
