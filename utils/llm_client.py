@@ -13,15 +13,12 @@ load_dotenv()
 class LLMClient:
     """Wrapper class for LiteLLM operations"""
 
-    def __init__(self, model: Optional[str] = None, temperature: float = 0.7, max_tokens: int = 1000):
-        self.model = model or os.getenv("DEFAULT_MODEL", "gpt-3.5-turbo")
+    def __init__(self, model: Optional[str] = None, temperature: float = 0.2, max_tokens: int = 1000):
+        self.model = model or os.getenv("DEFAULT_MODEL", "gpt-4-turbo-preview")
         self.temperature = temperature
         self.max_tokens = max_tokens
 
         # Set API keys
-        groq_key = os.getenv("GROQ_API_KEY")
-        if groq_key:
-            os.environ["GROQ_API_KEY"] = groq_key
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
             os.environ["OPENAI_API_KEY"] = openai_key
@@ -31,7 +28,9 @@ class LLMClient:
         google_key = os.getenv("GOOGLE_API_KEY")
         if google_key:
             os.environ["GOOGLE_API_KEY"] = google_key
-        
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            os.environ["GROQ_API_KEY"] = groq_key
 
     def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """
@@ -87,14 +86,14 @@ class LLMClient:
 def get_available_models() -> List[str]:
     """Get list of available models"""
     return [
-        "gpt-3.5-turbo",
-        "gpt-4",
         "gpt-4-turbo-preview",
+        "gpt-4",
+        "gpt-3.5-turbo",
+        "groq/llama-3.3-70b-versatile",
         #"claude-3-sonnet-20240229",
         #"claude-3-haiku-20240307",
         #"gemini-pro",
         #"gemini-1.5-pro",
-        "groq/llama-3.3-70b-versatile"
     ]
 
 

@@ -60,7 +60,6 @@ class WebSearchTool:
         except Exception as e:
             return [{"error": f"Search failed: {str(e)}"}]
 
-
     def search(self, query: str, num_results: int = 5, preferred_api: str = "serper") -> List[Dict[str, Any]]:
         """
         Search using preferred API with fallback
@@ -68,7 +67,7 @@ class WebSearchTool:
         Args:
             query: Search query
             num_results: Number of results to return
-            preferred_api: Preferred search API
+            preferred_api: Preferred search API 
 
         Returns:
             List of search results

@@ -1,27 +1,28 @@
+
 # interface_thai.py
 # Multi-language support for RAG Chat Application
 
 # --- Thai Language Dictionary ---
 THAI_TEXTS = {
-    "APP_TITLE": "ผู้ช่วยแชท RAG",
+    "APP_TITLE": "NITRA",
     "HEADER_TITLE": "NITRA",
     "HEADER_SUBTITLE": "🌙 NITRA — ผู้ช่วยดูแลการนอนหลับของคุณในทุกค่ำคืน",
     "SIDEBAR_CONFIG_HEADER": "⚙️ ตั้งค่า",
     "MODEL_SELECT_LABEL": "🤖 เลือกโมเดล",
-    "MODEL_SELECT_HELP": "เลือกโมเดลที่ใช้",
+    "MODEL_SELECT_HELP": "เลือกโมเดลที่จะใช้",
     "TEMP_SLIDER_LABEL": "🌡️ ระดับความคิดสร้างสรรค์",
     "TEMP_SLIDER_HELP": "ควบคุมความสุ่มของการตอบกลับ",
     "MAX_TOKENS_LABEL": "📏 โทเคนสูงสุด",
     "MAX_TOKENS_HELP": "ความยาวสูงสุดของการตอบกลับ",
     "RAG_SETTINGS_HEADER": "📚 ตั้งค่า RAG",
-    "CONTEXT_MAX_TOKENS_LABEL": "โทเคนของบริบท",
+    "CONTEXT_MAX_TOKENS_LABEL": "โทเคนบริบทสูงสุด",
     "CONTEXT_MAX_TOKENS_HELP": "โทเคนบริบทสูงสุดที่จะส่งไปให้ LLM",
     "SEARCH_RESULTS_LABEL": "จำนวนผลการค้นหา",
-    "SEARCH_RESULTS_HELP": "จำนวนข้อมูล (Chunk) ที่จะดึงขึ้นมา",
+    "SEARCH_RESULTS_HELP": "จำนวนส่วนข้อมูล (Chunk) ที่จะดึงขึ้นมา",
     "INIT_MODEL_BUTTON": "🤖 เริ่มต้น Model",
     "INIT_RAG_BUTTON": "📚 เริ่มต้น RAG",
-    "INIT_MODEL_SPINNER": "กำลังเริ่มต้น Model...",
-    "INIT_RAG_SPINNER": "กำลังเริ่มต้นระบบ RAG...",
+    "INIT_MODEL_SPINNER": "โหลด Model...",
+    "INIT_RAG_SPINNER": "โหลด RAG...",
     "INIT_MODEL_SUCCESS": "Model พร้อมใช้งาน!",
     "INIT_RAG_SUCCESS": "ระบบ RAG พร้อมใช้งาน!",
     "DOC_MANAGEMENT_HEADER": "📁 จัดการเอกสาร",
@@ -33,7 +34,7 @@ THAI_TEXTS = {
     "ADD_DOC_BUTTON": "เพิ่มเอกสารข้อความ",
     "ADD_DOC_SUCCESS": "เพิ่มเอกสาร: ",
     "LOAD_SAMPLE_BUTTON": "📖 โหลดเอกสารตัวอย่าง",
-    "CLEAR_CHAT_BUTTON": "🗑️ เคลียแชท",
+    "CLEAR_CHAT_BUTTON": "🗑️ เคลียร์แชท",
     "STATS_HEADER": "📊 สถิติ",
     "STATS_DOCUMENTS": "เอกสารทั้งหมด",
     "STATS_CHUNKS": "ข้อมูล (Chunks)",
@@ -48,9 +49,9 @@ THAI_TEXTS = {
     "ABOUT_STUDENTS_HEADER": "**สำหรับนักเรียน/นักพัฒนา:**",
     "ABOUT_STUDENTS": """
     - ทดลองกับระบบ Embeddings
-    - กลยุทธ์การแบ่งส่วนข้อมูล (Chunking) ขั้นสูง
-    - การกรองข้อมูลเมตา (Metadata)
-    - ระบบการอ้างอิง
+    - กลยุทธ์การแบ่งส่วนข้อมูล (Chunking)
+    - การกรองข้อมูล (Metadata)
+    - ระบบแนบแหล่งอ้างอิง
     """,
     "TAB_CHAT": "💬 แชท",
     "TAB_DOCUMENTS": "📄 เอกสาร",
@@ -74,7 +75,7 @@ THAI_TEXTS = {
     "RETRIEVED_CONTEXT_EXPANDER": "📄 บริบทที่ดึงมา",
     "DOC_KB_HEADER": "📄 เอกสารในคลังความรู้",
     "NO_DOCS_INFO": "ยังไม่มีเอกสารในคลังความรู้",
-    "CONTEXT_USED": "📚 *ใช้ข้อมูลจากเอกสาร*",
+    "CONTEXT_USED": "📚 *ใช้บริบทจากเอกสาร*",
     "ASSISTANT_ROLE": "assistant",
     "USER_ROLE": "user",
     "DELETE_BUTTON_LABEL": "ลบ",
@@ -82,12 +83,35 @@ THAI_TEXTS = {
     "PROCESSING_FILE": "กำลังประมวลผล",
     "FILE_ADD_SUCCESS": "เพิ่มไฟล์ข้อความสำเร็จ:",
     "FILE_ERROR": "เกิดข้อผิดพลาดในการประมวลผล",
-    "LANG_BUTTON": "🇬🇧 English",
+    "LANG_BUTTON": "🇹🇭 ไทย",
+
+
+    "WEB_SETTINGS_HEADER": "🔍 การตั้งค่า Web Search",
+    "WEB_ENABLE_LABEL": "เปิดใช้งาน Web Search Fallback",
+    "WEB_ENABLE_HELP": "ค้นหาเว็บเมื่อ RAG ไม่มีข้อมูลเพียงพอ",
+    "WEB_SEARCH_RESULTS_LABEL": "จำนวนผลการค้นหาจากเว็บ",
+    "WEB_SEARCH_RESULTS_HELP": "จำนวนแหล่งข้อมูลจากเว็บที่จะดึงมา",
+    "SEARCH_API_HEADER": "📊 สถานะ Search API",
+    "ABOUT_SEARCH_HEADER": "**Smart Search:**",
+    "ABOUT_SEARCH_TEXT": """
+    - ค้นหาเฉพาะหัวข้อเกี่ยวกับการนอนหลับ
+    - สลับไปใช้เว็บโดยอัตโนมัติเมื่อ RAG ขาดข้อมูล
+    - ดึงข้อมูลจาก 5 แหล่งที่เชื่อถือได้
+    """,
+    "NON_SLEEP_WARNING": "ขออภัยค่ะ ดิฉันสามารถตอบได้เฉพาะคำถามที่เกี่ยวข้องกับการนอนหลับเท่านั้น กรุณาสอบถามเกี่ยวกับคุณภาพการนอนหลับ ภาวะนอนไม่หลับ วงจรการนอนหลับ หรือหัวข้อที่เกี่ยวข้องกับการนอนหลับอื่นๆ 😴",
+    "RAG_NOT_ENOUGH_WARNING": "📚 ข้อมูลจาก RAG ไม่เพียงพอ!",
+    "SEARCHING_WEB_INFO": "🔍 กำลังค้นหาข้อมูลจากเว็บ...",
+    "WEB_SEARCH_SUCCESS": "✅ ค้นหาเว็บเสร็จสิ้น! ใช้",
+    "WEB_SOURCES_LABEL": "แหล่งข้อมูล",
+    "WEB_RESULTS_EXPANDER": "🌐 ผลการค้นหาจากเว็บ",
+    "WEB_DISABLED_WARNING": "⚠️ Web Search ถูกปิดใช้งาน ไม่สามารถดึงข้อมูลเพิ่มเติมได้",
+    "RAG_NO_ANSWER": "ฉันไม่มีข้อมูลที่เพียงพอในคลังความรู้ของฉันเพื่อตอบคำถามนี้ โปรดเปิดใช้งาน Web Search หรือเพิ่มเอกสารลงในคลังความรู้",
+    "SEARCH_USED": "🔍 *ใช้ผลการค้นหาจากเว็บ*",
 }
 
 # --- English Language Dictionary ---
 ENGLISH_TEXTS = {
-    "APP_TITLE": "RAG Chat Assistant",
+    "APP_TITLE": "NITRA",
     "HEADER_TITLE": "NITRA",
     "HEADER_SUBTITLE": "🌙 NITRA — Your Sleep Companion for Every Night",
     "SIDEBAR_CONFIG_HEADER": "⚙️ Configuration",
@@ -166,7 +190,29 @@ ENGLISH_TEXTS = {
     "PROCESSING_FILE": "Processing",
     "FILE_ADD_SUCCESS": "Text file added successfully:",
     "FILE_ERROR": "Error processing",
-    "LANG_BUTTON": "🇹🇭 ไทย",
+    "LANG_BUTTON": "🇬🇧 English",
+
+    "WEB_SETTINGS_HEADER": "🔍 Web Search Settings",
+    "WEB_ENABLE_LABEL": "Enable Web Search Fallback",
+    "WEB_ENABLE_HELP": "Search web when RAG doesn't have sufficient information",
+    "WEB_SEARCH_RESULTS_LABEL": "Number of Web Search Results",
+    "WEB_SEARCH_RESULTS_HELP": "Number of web sources to retrieve",
+    "SEARCH_API_HEADER": "📊 Search API Status",
+    "ABOUT_SEARCH_HEADER": "**Smart Search:**",
+    "ABOUT_SEARCH_TEXT": """
+    - Only searches sleep-related topics
+    - Automatic fallback when RAG lacks info
+    - Fetches from 5 reliable sources
+    """,
+    "NON_SLEEP_WARNING": "I'm sorry, but I can only answer questions related to sleep and sleep disorders. Please ask me about sleep quality, insomnia, sleep cycles, or other sleep-related topics. 😴",
+    "RAG_NOT_ENOUGH_WARNING": "📚 RAG knowledge base not enough!",
+    "SEARCHING_WEB_INFO": "🔍 Searching the web for current information...",
+    "WEB_SEARCH_SUCCESS": "✅ Web search completed! Using",
+    "WEB_SOURCES_LABEL": "sources",
+    "WEB_RESULTS_EXPANDER": "🌐 Web Search Results",
+    "WEB_DISABLED_WARNING": "⚠️ Web search is disabled. Cannot fetch additional information.",
+    "RAG_NO_ANSWER": "I don't have sufficient information in my knowledge base to answer this question. Please enable web search or add more documents to the knowledge base.",
+    "SEARCH_USED": "🔍 *Used web search*",
 }
 
 
