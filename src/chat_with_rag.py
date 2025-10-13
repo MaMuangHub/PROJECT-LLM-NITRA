@@ -477,7 +477,7 @@ def main():
                             # st.info(texts["SEARCHING_WEB_INFO"])
 
                             # Execute Search
-                            enhanced_prompt_search = f"{prompt} sleep research evidence-based -site:facebook.com -site:tiktok.com -site:twitter.com -site:instagram.com -site:youtube.com -site:pantip.com -site:reddit.com"
+                            enhanced_prompt_search = f"{prompt} sleep research evidence-based -site:lemon8-app.com -site:facebook.com -site:tiktok.com -site:twitter.com -site:instagram.com -site:youtube.com -site:pantip.com -site:reddit.com"
                             search_results = execute_search(enhanced_prompt_search, web_search_results)
                             search_context = search_results
                             search_used = True
