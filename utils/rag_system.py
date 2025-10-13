@@ -5,7 +5,6 @@ Simple and educational implementation for CS203 lab.
 import litellm
 import os
 import pickle
-import shutil
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import numpy as np
@@ -33,11 +32,12 @@ except ImportError:
 # Lazy imports to avoid PyTorch conflicts
 faiss = None
 SentenceTransformer = None
+CrossEncoder = None
 
 
 def _lazy_imports():
     """Lazy import of heavy dependencies."""
-    global faiss, SentenceTransformer
+    global faiss, SentenceTransformer, CrossEncoder
     if faiss is None:
         # Additional environment setup to prevent conflicts
         os.environ["OMP_NUM_THREADS"] = "1"
@@ -49,6 +49,14 @@ def _lazy_imports():
         from sentence_transformers import SentenceTransformer as _ST  # type: ignore
         SentenceTransformer = _ST
 
+    if CrossEncoder is None:
+        try:
+            from sentence_transformers import CrossEncoder as _CE
+            CrossEncoder = _CE
+        except ImportError:
+            print("Warning: CrossEncoder not available. Re-ranking will be disabled.")
+            CrossEncoder = None
+
 
 class SimpleRAGSystem:
     """
@@ -56,7 +64,8 @@ class SimpleRAGSystem:
     Educational implementation with clear, understandable code.
     """
 
-    def __init__(self, data_dir: str = "rag_data", embedding_model: str = "all-MiniLM-L6-v2"):
+    def __init__(self, data_dir: str = "rag_data", embedding_model: str = "all-MiniLM-L6-v2",reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+                use_reranker: bool = True):
         """
         Initialize the RAG system.
 
@@ -69,7 +78,10 @@ class SimpleRAGSystem:
 
         # Lazy initialization to avoid PyTorch conflicts with Streamlit
         self.model = None
+        self.reranker = None
         self.embedding_model = embedding_model
+        self.reranker_model = reranker_model
+        self.use_reranker = use_reranker
         self.embedding_dimension = None
         self.index = None
 
@@ -92,6 +104,12 @@ class SimpleRAGSystem:
                 # Initialize FAISS index (L2 distance)
                 self.index = faiss.IndexFlatL2(self.embedding_dimension)
 
+        #Load re-ranker if enabled
+        if self.use_reranker and self.reranker is None:
+            _lazy_imports()
+            print(f"Loading re-ranker model: {self.reranker_model}")
+            self.reranker = CrossEncoder(self.reranker_model)
+
     def add_text_document(self, text: str, doc_id: str, metadata: Optional[Dict[str, Any]] = None):
         """
         Add a text document to the RAG system.
@@ -101,7 +119,7 @@ class SimpleRAGSystem:
             doc_id: Unique identifier for the document
             metadata: Optional metadata dictionary
         """
-        create_text_file("test4.txt",text)
+        #create_text_file("test4.txt",text)
 
         try:
             # Ensure model is loaded
@@ -324,7 +342,7 @@ class SimpleRAGSystem:
     #     return response["choices"][0]["message"]["content"].strip()
         
 
-    def search(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, n_results: int = 5, use_reranker: Optional[bool] = None) -> List[Dict[str, Any]]:
         """
         Search for relevant documents using FAISS
 
@@ -341,32 +359,85 @@ class SimpleRAGSystem:
 
             # Ensure model is loaded
             self._ensure_model_loaded()
+
+           # Determine whether to use re-ranker
+            should_rerank = use_reranker if use_reranker is not None else self.use_reranker
+
+            # Step 1: Initial retrieval (get more candidates for re-ranking)
+            initial_k = n_results * 3 if should_rerank else n_results
+            initial_k = min(initial_k, len(self.documents))
+
             # Create embedding for query
             query_embedding = self.model.encode([query])
             # Normalize for cosine similarity
             faiss.normalize_L2(query_embedding)
 
-            # Search using FAISS
-            n_results = min(n_results, len(self.documents))
             scores, indices = self.index.search(
-                query_embedding.astype('float32'), n_results)
+                query_embedding.astype('float32'), initial_k)
 
-            search_results = []
-            for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
-                if idx >= 0:  # Valid index
-                    search_results.append({
+            # Search using FAISS
+            candidates = []
+            for score, idx in zip(scores[0], indices[0]):
+                if idx >= 0:
+                    candidates.append({
                         "content": self.documents[idx],
                         "metadata": self.metadata[idx],
-                        "score": float(score),
-                        "rank": i + 1
+                        "initial_score": float(score),
+                        "index": int(idx)
                     })
+
+            # Step 2: Re-rank if enabled
+            if should_rerank and self.reranker is not None and candidates:
+                print(f"Re-ranking {len(candidates)} candidates...")
+                
+                # Prepare query-document pairs for re-ranker
+                pairs = [[query, candidate["content"]] for candidate in candidates]
+                
+                # Get re-ranking scores
+                rerank_scores = self.reranker.predict(pairs)
+                
+                # Add re-ranking scores and sort
+                for candidate, rerank_score in zip(candidates, rerank_scores):
+                    candidate["rerank_score"] = float(rerank_score)
+                
+                # Sort by re-ranking score (higher is better for cross-encoder)
+                candidates.sort(key=lambda x: x["rerank_score"], reverse=True)
+                
+                # Take top n_results
+                candidates = candidates[:n_results]
+                
+                # Add final rank
+                for i, candidate in enumerate(candidates):
+                    candidate["rank"] = i + 1
+                    candidate["score"] = candidate["rerank_score"]  # Use rerank score as final score
+            else:
+                # No re-ranking, just take top n_results and use initial scores
+                candidates = candidates[:n_results]
+                for i, candidate in enumerate(candidates):
+                    candidate["rank"] = i + 1
+                    candidate["score"] = candidate["initial_score"]
+
+            # Clean up results
+            search_results = []
+            for candidate in candidates:
+                result = {
+                    "content": candidate["content"],
+                    "metadata": candidate["metadata"],
+                    "score": candidate["score"],
+                    "rank": candidate["rank"]
+                }
+                if should_rerank and "rerank_score" in candidate:
+                    result["rerank_score"] = candidate["rerank_score"]
+                    result["initial_score"] = candidate["initial_score"]
+                
+                search_results.append(result)
 
             return search_results
 
         except Exception as e:
             return [{"error": f"Search failed: {str(e)}"}]
 
-    def get_context_for_query(self, query: str, max_context_length: int = 2000) -> str:
+    def get_context_for_query(self, query: str, max_context_length: int = 2000, use_reranker: Optional[bool] = None) -> str:
         """
         Get relevant context for a query, formatted for LLM consumption.
 
@@ -377,7 +448,7 @@ class SimpleRAGSystem:
         Returns:
             Formatted context string
         """
-        search_results = self.search(query, n_results=5)
+        search_results = self.search(query, n_results=5, use_reranker=use_reranker)
 
         if not search_results or "error" in search_results[0]:
             return "No relevant context found."
@@ -392,6 +463,7 @@ class SimpleRAGSystem:
             content = result["content"]
             metadata = result.get("metadata", {})
             doc_id = metadata.get("doc_id", "unknown")
+            score = result.get("score", 0)
 
             # Format the context piece
             context_piece = f"[Source: {doc_id}]\n{content}\n"
@@ -509,11 +581,17 @@ class SimpleRAGSystem:
                         end = i + 1
                         break
 
+            while end < len(text) and text[end] != ' ':
+                end += 1
+
             chunk = text[start:end].strip()
             if chunk:
                 chunks.append(chunk)
 
             start = end - overlap
+
+            while start >= 0 and start < len(text) and text[start] != ' ':
+                start -= 1
 
             # Prevent infinite loops
             if start >= end:
@@ -536,7 +614,9 @@ class SimpleRAGSystem:
                     'documents': self.documents,
                     'metadata': self.metadata,
                     'embedding_dimension': self.embedding_dimension,
-                    'embedding_model': self.embedding_model
+                    'embedding_model': self.embedding_model,
+                    'reranker_model': self.reranker_model,
+                    'use_reranker': self.use_reranker
                 }, f)
 
         except Exception as e:
@@ -556,6 +636,8 @@ class SimpleRAGSystem:
                     self.metadata = data.get('metadata', [])
                     self.embedding_dimension = data.get('embedding_dimension')
                     saved_model = data.get('embedding_model')
+                    self.reranker_model = data.get('reranker_model', self.reranker_model)
+                    self.use_reranker = data.get('use_reranker', self.use_reranker)
 
                     # Check if model changed
                     if saved_model != self.embedding_model:
@@ -585,6 +667,8 @@ class SimpleRAGSystem:
             "total_chunks": len(self.documents),
             "total_documents": len(doc_ids),
             "embedding_model": self.embedding_model,
+            "reranker_model": self.reranker_model,
+            "use_reranker": self.use_reranker,
             "embedding_dimension": self.embedding_dimension,
             "has_index": self.index is not None,
             "data_directory": str(self.data_dir)
@@ -594,18 +678,12 @@ class SimpleRAGSystem:
 def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
     """
     Load sample documents into the RAG system for testing.
-    After loading, moves files to backup directory (data_backup).
     """
     data_path = Path(data_dir)
-    backup_path = Path("./data_backup")
-    
     if not data_path.exists():
         print(f"Sample data directory {data_dir} not found")
         return
-    
-    # Create backup directory if it doesn't exist
-    backup_path.mkdir(exist_ok=True)
-    
+
     # Load sample text documents
     for txt_file in data_path.glob("*.txt"):
         print(f"Loading {txt_file.name}...")
@@ -616,16 +694,7 @@ def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data")
             txt_file.stem,
             {"source_type": "text", "source_path": str(txt_file)}
         )
-        
-        # Move file to backup
-        destination = backup_path / txt_file.name
-        if destination.exists():
-            # Add timestamp if file exists
-            timestamp = int(os.path.getmtime(str(txt_file)))
-            destination = backup_path / f"{txt_file.stem}_{timestamp}{txt_file.suffix}"
-        shutil.move(str(txt_file), str(destination))
-        print(f"Moved {txt_file.name} to backup")
-    
+
     # Load sample PDF documents
     for pdf_file in data_path.glob("*.pdf"):
         print(pdf_file)
