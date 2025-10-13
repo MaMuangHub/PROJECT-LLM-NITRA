@@ -628,22 +628,6 @@ def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data")
     
     # Load sample PDF documents
     for pdf_file in data_path.glob("*.pdf"):
-<<<<<<< HEAD
-        if not pdf_file.name.startswith("_"):
-            print(f"Loading {pdf_file.name}...")
-            rag_system.add_pdf_document(str(pdf_file))
-            
-            # Move file to backup
-            destination = backup_path / pdf_file.name
-            if destination.exists():
-                # Add timestamp if file exists
-                timestamp = int(os.path.getmtime(str(pdf_file)))
-                destination = backup_path / f"{pdf_file.stem}_{timestamp}{pdf_file.suffix}"
-            shutil.move(str(pdf_file), str(destination))
-            print(f"Moved {pdf_file.name} to backup")
-    
-    print("Sample documents loaded and moved to backup!")
-=======
         print(pdf_file)
         if not pdf_file.name.startswith("_"):
             rag_system.add_pdf_document(str(pdf_file))
@@ -654,7 +638,6 @@ def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data")
             
 
     print("Sample documents loaded!")
->>>>>>> eb6553a6a151f1b0d900de0ae0ed40cff64b5b9f
 
 
 def load_sample_documents_for_demo(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
