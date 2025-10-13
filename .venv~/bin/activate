@@ -1,9 +1,5 @@
 # This file must be used with "source bin/activate" *from bash*
-<<<<<<< HEAD
-# you cannot run it directly
-=======
 # You cannot run it directly
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 
 deactivate () {
     # reset old environment variables
@@ -18,18 +14,9 @@ deactivate () {
         unset _OLD_VIRTUAL_PYTHONHOME
     fi
 
-<<<<<<< HEAD
-    # This should detect bash and zsh, which have a hash command that must
-    # be called to get it to forget past commands.  Without forgetting
-    # past commands the $PATH changes we made may not be respected
-    if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
-        hash -r 2> /dev/null
-    fi
-=======
     # Call hash to forget past commands. Without forgetting
     # past commands the $PATH changes we made may not be respected
     hash -r 2> /dev/null
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 
     if [ -n "${_OLD_VIRTUAL_PS1:-}" ] ; then
         PS1="${_OLD_VIRTUAL_PS1:-}"
@@ -48,20 +35,15 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-<<<<<<< HEAD
-VIRTUAL_ENV=/home/mamon/PROLLM/.venv
-export VIRTUAL_ENV
-=======
 # on Windows, a path can contain colons and backslashes and has to be converted:
 if [ "${OSTYPE:-}" = "cygwin" ] || [ "${OSTYPE:-}" = "msys" ] ; then
     # transform D:\path\to\venv to /d/path/to/venv on MSYS
     # and to /cygdrive/d/path/to/venv on Cygwin
-    export VIRTUAL_ENV=$(cygpath /home/mr-dome/Desktop/PROJECT-LLM/.venv)
+    export VIRTUAL_ENV=$(cygpath '/home/dana456/Desktop/PROJECT-LLM/.venv~')
 else
     # use the path as-is
-    export VIRTUAL_ENV=/home/mr-dome/Desktop/PROJECT-LLM/.venv
+    export VIRTUAL_ENV='/home/dana456/Desktop/PROJECT-LLM/.venv~'
 fi
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 
 _OLD_VIRTUAL_PATH="$PATH"
 PATH="$VIRTUAL_ENV/"bin":$PATH"
@@ -77,21 +59,12 @@ fi
 
 if [ -z "${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
     _OLD_VIRTUAL_PS1="${PS1:-}"
-    PS1='(.venv) '"${PS1:-}"
+    PS1='(.venv~) '"${PS1:-}"
     export PS1
-    VIRTUAL_ENV_PROMPT='(.venv) '
+    VIRTUAL_ENV_PROMPT='(.venv~) '
     export VIRTUAL_ENV_PROMPT
 fi
 
-<<<<<<< HEAD
-# This should detect bash and zsh, which have a hash command that must
-# be called to get it to forget past commands.  Without forgetting
-# past commands the $PATH changes we made may not be respected
-if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
-    hash -r 2> /dev/null
-fi
-=======
 # Call hash to forget past commands. Without forgetting
 # past commands the $PATH changes we made may not be respected
 hash -r 2> /dev/null
->>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c

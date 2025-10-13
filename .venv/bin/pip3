@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+#!/home/mamon/PROLLM/.venv/bin/python3
+=======
 #!/home/mr-dome/Desktop/PROJECT-LLM/.venv/bin/python3
+>>>>>>> 7a790c3489b72a0341dedf9ceca316256968112c
 # -*- coding: utf-8 -*-
 import re
 import sys

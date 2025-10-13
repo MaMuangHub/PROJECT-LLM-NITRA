@@ -5,6 +5,7 @@ Simple and educational implementation for CS203 lab.
 import litellm
 import os
 import pickle
+import shutil
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import numpy as np
@@ -593,12 +594,18 @@ class SimpleRAGSystem:
 def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data"):
     """
     Load sample documents into the RAG system for testing.
+    After loading, moves files to backup directory (data_backup).
     """
     data_path = Path(data_dir)
+    backup_path = Path("./data_backup")
+    
     if not data_path.exists():
         print(f"Sample data directory {data_dir} not found")
         return
-
+    
+    # Create backup directory if it doesn't exist
+    backup_path.mkdir(exist_ok=True)
+    
     # Load sample text documents
     for txt_file in data_path.glob("*.txt"):
         print(f"Loading {txt_file.name}...")
@@ -609,7 +616,16 @@ def load_sample_documents(rag_system: SimpleRAGSystem, data_dir: str = "./data")
             txt_file.stem,
             {"source_type": "text", "source_path": str(txt_file)}
         )
-
+        
+        # Move file to backup
+        destination = backup_path / txt_file.name
+        if destination.exists():
+            # Add timestamp if file exists
+            timestamp = int(os.path.getmtime(str(txt_file)))
+            destination = backup_path / f"{txt_file.stem}_{timestamp}{txt_file.suffix}"
+        shutil.move(str(txt_file), str(destination))
+        print(f"Moved {txt_file.name} to backup")
+    
     # Load sample PDF documents
     for pdf_file in data_path.glob("*.pdf"):
         print(pdf_file)
